@@ -1,5 +1,5 @@
 {
-  "name": "bun-template",
+  "name": "beritaku",
   "private": true,
   "type": "module",
   "module": "src/index.ts",
@@ -14,9 +14,16 @@
     "check:fast": "bun run lint && bun run fmt:check",
     "check": "bun run typecheck && bun run lint && bun run fmt:check",
     "//3": "=== Convenience ===",
+    "start": "bun src/index.ts",
+    "dev": "bun --hot src/index.ts",
+    "test": "bun test",
     "fix": "bun run lint:fix && bun run fmt",
     "bench": "bash scripts/bench.sh",
     "prepare": "husky"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.8.0",
+    "hono": "^4.12.23"
   },
   "devDependencies": {
     "@nkzw/oxlint-config": "^1.0.1",

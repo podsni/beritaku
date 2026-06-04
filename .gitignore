@@ -27,6 +27,11 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .cache
 *.tsbuildinfo
 
+# local agent tooling
+.agents
+.serena
+skills-lock.json
+
 # IntelliJ based IDEs
 .idea
 

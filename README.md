@@ -1,74 +1,107 @@
-# Bun Template: High-Performance Tooling
+# Beritaku News API
 
-Template Bun yang dioptimalkan untuk kecepatan pengembangan maksimal menggunakan ekosistem **Oxc** (`oxlint`, `oxfmt`) dan **tsgo**.
+NewsAPI-like JSON API untuk berita Indonesia. Server berjalan di Bun + Hono dan mengambil berita dari RSS media Indonesia melalui adapter modular.
 
-## 🚀 Fitur Utama
-
-- **Runtime:** [Bun](https://bun.sh) - Cepat, all-in-one JavaScript runtime & package manager.
-- **Linter Ultra Cepat:** Menggunakan `oxlint` (10-100x lebih cepat dari ESLint).
-- **Formatter Kilat:** Menggunakan `oxfmt` (Alternatif Prettier yang sangat cepat).
-- **Type-checker Instan:** Menggunakan `tsgo` untuk diagnosa TypeScript tanpa menunggu lama.
-- **Struktur Rapi:** Kode sumber berada di dalam folder `src/`.
-- **Integrasi VS Code:** Konfigurasi otomatis untuk format dan perbaikan lint saat simpan (Save).
-
-## 🛠 Cara Penggunaan
-
-### 1. Instalasi Dependensi
-
-Gunakan Bun untuk menginstal semua package yang dibutuhkan:
+## Menjalankan API
 
 ```bash
 bun install
+bun src/index.ts
 ```
 
-### 2. Menjalankan Proyek
-
-Untuk menjalankan file utama (`src/index.ts`):
+Default server berjalan di `http://localhost:3000`. Port bisa diubah dengan environment variable:
 
 ```bash
-bun run src/index.ts
+PORT=4000 bun src/index.ts
 ```
 
-Untuk mode pengembangan dengan _hot reload_:
+## Endpoint
+
+### Health
 
 ```bash
-bun --hot src/index.ts
+curl http://localhost:3000/health
 ```
 
-### 3. Quality Control (Pemeriksaan Kode)
+### Top Headlines
 
-Template ini memiliki sistem pemeriksaan kualitas yang sudah diatur di `package.json`:
-
-- **Cek Semua:** Jalankan pemeriksaan tipe, lint, dan format sekaligus.
-  ```bash
-  bun run check
-  ```
-
-````
-- **Perbaikan Otomatis:** Perbaiki masalah lint dan format secara otomatis.
-  ```bash
-  bun run fix
-````
-
-- **Cek Cepat:** Hanya lint dan format (tanpa type-check) untuk iterasi cepat.
-  ```bash
-  bun run check:fast
-  ```
-
+```bash
+curl "http://localhost:3000/v2/top-headlines?country=id&category=general&pageSize=10&page=1"
 ```
 
-## 📂 Struktur Direktori
+Query yang didukung:
 
-- `src/`: Folder utama untuk kode sumber TypeScript.
-- `.vscode/`: Konfigurasi editor untuk integrasi tooling otomatis.
-- `.oxlintrc.json`: Pengaturan aturan linter.
-- `.oxfmtrc.jsonc`: Pengaturan pemformatan kode.
-- `SKILL.md`: Panduan teknis penggunaan stack tooling ini.
-- `AGENTS.md`: Instruksi khusus untuk asisten AI (LLM).
+- `country`: hanya `id`
+- `category`: `general`, `business`, `sports`, `technology`, `entertainment`
+- `pageSize`: default `20`, maksimum `100`
+- `page`: default `1`
 
-## 📝 Konvensi Pengembangan
+### Everything
 
-1. **Gunakan Primitif Bun:** Lebih disukai menggunakan API bawaan Bun (`Bun.file`, `Bun.serve`) daripada modul Node.js.
-2. **Type Safety:** Hindari penggunaan `any`. Linter akan memberikan peringatan jika ditemukan.
-3. **Format Otomatis:** Pastikan editor Anda menggunakan pengaturan yang ada di `.vscode/settings.json` agar kode selalu rapi secara konsisten.
+```bash
+curl "http://localhost:3000/v2/everything?q=ekonomi&sources=antara-general&pageSize=10"
+```
+
+Query yang didukung:
+
+- `q`: cari di judul, deskripsi, atau konten
+- `sources`: daftar source dipisahkan koma
+- `from`: tanggal awal
+- `to`: tanggal akhir
+- `sortBy`: hanya `publishedAt`
+- `pageSize`: default `20`, maksimum `100`
+- `page`: default `1`
+
+### Sources
+
+```bash
+curl http://localhost:3000/v2/top-headlines/sources
+```
+
+## Response
+
+Response sukses mengikuti bentuk dasar NewsAPI:
+
+```json
+{
+  "status": "ok",
+  "totalResults": 1,
+  "articles": [
+    {
+      "source": { "id": "antara-general", "name": "ANTARA News" },
+      "author": null,
+      "title": "Judul berita",
+      "description": "Ringkasan berita",
+      "url": "https://example.com/berita",
+      "urlToImage": null,
+      "publishedAt": "2026-06-05T10:00:00.000Z",
+      "content": "Ringkasan berita"
+    }
+  ]
+}
+```
+
+Response error:
+
+```json
+{
+  "status": "error",
+  "code": "parameterInvalid",
+  "message": "country must be id"
+}
+```
+
+## Struktur
+
+- `src/app.ts`: Hono app factory untuk runtime dan test.
+- `src/index.ts`: Bun server entrypoint.
+- `src/modules/news`: route, service, RSS adapter, source registry, query parser, cache.
+- `src/shared/http`: helper error, response, dan pagination.
+
+## Quality Commands
+
+```bash
+bun test
+bun run check:fast
+bun run check
 ```

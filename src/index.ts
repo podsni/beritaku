@@ -1,10 +1,14 @@
-export function buildGreeting(name?: string): string {
-  if (!name) {
-    return "Hello via Bun!";
-  }
-  return `Hello via Bun, ${name}!`;
-}
+import { createApp } from "./app";
 
-if (import.meta.main) {
-  await Bun.write(Bun.stdout, `${buildGreeting()}\n`);
-}
+const app = createApp();
+const port = Number(Bun.env.PORT ?? 3000);
+
+Bun.serve({
+  port,
+  fetch: app.fetch,
+});
+
+void Bun.write(
+  Bun.stdout,
+  `News API Indonesia listening on http://localhost:${port}\n`,
+);
