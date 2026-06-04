@@ -31,10 +31,7 @@ export class NewsService {
   }
 
   async getTopHeadlines(query: TopHeadlinesQuery): Promise<NewsSearchResult> {
-    const sources = this.options.sources.filter(
-      (source) =>
-        source.country === query.country && source.category === query.category,
-    );
+    const sources = this.resolveTopHeadlineSources(query);
 
     const articles = await this.fetchArticles(sources);
     const sortedArticles = sortByPublishedAt(articles);
@@ -75,6 +72,44 @@ export class NewsService {
       }
       return source;
     });
+  }
+
+  private resolveTopHeadlineSources(
+    query: TopHeadlinesQuery,
+  ): readonly NewsSource[] {
+    const requestedSources = query.sources;
+    const sourceIdSet =
+      requestedSources === undefined ? undefined : new Set(requestedSources);
+
+    const sources = this.options.sources.filter((source) => {
+      if (source.country !== query.country) {
+        return false;
+      }
+
+      if (query.category !== "all" && source.category !== query.category) {
+        return false;
+      }
+
+      return sourceIdSet === undefined || sourceIdSet.has(source.id);
+    });
+
+    if (sourceIdSet !== undefined) {
+      const knownSourceIds = new Set(
+        this.options.sources.map((source) => source.id),
+      );
+      const unknownSource = requestedSources?.find(
+        (sourceId) => !knownSourceIds.has(sourceId),
+      );
+
+      if (unknownSource !== undefined) {
+        throw badRequest(
+          "parameterInvalid",
+          `unknown source: ${unknownSource}`,
+        );
+      }
+    }
+
+    return sources;
   }
 
   private async fetchArticles(

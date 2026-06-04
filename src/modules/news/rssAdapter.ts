@@ -63,6 +63,7 @@ function getImageUrl(item: Record<string, unknown>): string | null {
 
   return (
     cleanText(getText(enclosure["@_url"])) ??
+    cleanText(getText(item.img)) ??
     cleanText(getText(mediaContent["@_url"])) ??
     cleanText(getText(mediaThumbnail["@_url"]))
   );

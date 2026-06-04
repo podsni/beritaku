@@ -4,6 +4,7 @@ import {
   newsCategories,
   type EverythingQuery,
   type NewsCategory,
+  type NewsCategoryFilter,
   type TopHeadlinesQuery,
 } from "./types";
 
@@ -15,11 +16,13 @@ export function parseTopHeadlinesQuery(
   }
 
   const category = parseCategory(query.category ?? "general");
+  const sources = parseSources(query.sources);
   const pagination = parsePagination(query);
 
   return {
     country: "id",
     category,
+    sources,
     ...pagination,
   };
 }
@@ -44,14 +47,18 @@ export function parseEverythingQuery(
   };
 }
 
-function parseCategory(value: string): NewsCategory {
+function parseCategory(value: string): NewsCategoryFilter {
+  if (value === "all") {
+    return "all";
+  }
+
   if (newsCategories.includes(value as NewsCategory)) {
     return value as NewsCategory;
   }
 
   throw badRequest(
     "parameterInvalid",
-    `category must be one of: ${newsCategories.join(", ")}`,
+    `category must be one of: all, ${newsCategories.join(", ")}`,
   );
 }
 
@@ -63,10 +70,16 @@ function parseSources(
     return undefined;
   }
 
-  return normalized
+  const sources = normalized
     .split(",")
     .map((source) => source.trim())
     .filter((source) => source.length > 0);
+
+  if (sources.length === 0 || sources.includes("all")) {
+    return undefined;
+  }
+
+  return sources;
 }
 
 function parseOptionalDate(

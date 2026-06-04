@@ -7,6 +7,7 @@ export const newsCategories = [
 ] as const;
 
 export type NewsCategory = (typeof newsCategories)[number];
+export type NewsCategoryFilter = NewsCategory | "all";
 export type NewsCountry = "id";
 export type NewsLanguage = "id";
 
@@ -47,7 +48,8 @@ export interface NewsArticle {
 
 export interface TopHeadlinesQuery {
   readonly country: NewsCountry;
-  readonly category: NewsCategory;
+  readonly category: NewsCategoryFilter;
+  readonly sources?: readonly string[];
   readonly page: number;
   readonly pageSize: number;
   readonly offset: number;

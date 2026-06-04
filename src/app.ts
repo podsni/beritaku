@@ -3,6 +3,7 @@ import { createNewsRoutes } from "./modules/news/newsRoutes";
 import { NewsService } from "./modules/news/newsService";
 import { defaultNewsSources } from "./modules/news/sourceRegistry";
 import type { FetchText, NewsSource } from "./modules/news/types";
+import { createWebRoutes } from "./modules/web/webRoutes";
 
 export interface CreateAppOptions {
   readonly sources?: readonly NewsSource[];
@@ -20,6 +21,7 @@ export function createApp(options: CreateAppOptions = {}): Hono {
 
   const app = new Hono();
 
+  app.route("/", createWebRoutes());
   app.get("/health", (c) => c.json({ status: "ok" }));
   app.route("/v2", createNewsRoutes(newsService));
 
