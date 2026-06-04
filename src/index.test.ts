@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
+import { mkdtemp, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { createApp } from "./app";
+import { CsvArticleStore } from "./modules/news/csvArticleStore";
+import { defaultNewsSources } from "./modules/news/sourceRegistry";
 
 const indonesiaRssFixture = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
@@ -35,6 +40,17 @@ const cnnRssFixture = `<?xml version="1.0" encoding="UTF-8"?>
   </channel>
 </rss>`;
 
+const kompasHtmlFixture = `<!doctype html>
+<html>
+  <body>
+    <article>
+      <a href="https://www.kompas.com/tren/read/2026/06/05/070000000/daftar-berita-trending-hari-ini">
+        Daftar Berita Trending Hari Ini dari Kompas Tren
+      </a>
+    </article>
+  </body>
+</html>`;
+
 function createTestApp() {
   return createApp({
     cacheTtlMs: 0,
@@ -57,9 +73,28 @@ function createTestApp() {
         url: "https://www.cnnindonesia.com",
         rssUrl: "https://example.com/cnn.xml",
       },
+      {
+        id: "kompas-tren",
+        name: "Kompas.com Tren",
+        category: "general",
+        country: "id",
+        language: "id",
+        url: "https://www.kompas.com/tren",
+        rssUrl: "https://example.com/kompas-tren.html",
+        feedType: "html",
+      },
     ],
-    fetchText: async (url) =>
-      url.endsWith("/cnn.xml") ? cnnRssFixture : indonesiaRssFixture,
+    fetchText: async (url) => {
+      if (url.endsWith("/cnn.xml")) {
+        return cnnRssFixture;
+      }
+
+      if (url.endsWith("/kompas-tren.html")) {
+        return kompasHtmlFixture;
+      }
+
+      return indonesiaRssFixture;
+    },
   });
 }
 
@@ -104,7 +139,7 @@ describe("News API Indonesia", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
       status: "ok",
-      totalResults: 3,
+      totalResults: 4,
       articles: [
         {
           source: { id: "cnn-indonesia", name: "CNN Indonesia" },
@@ -115,6 +150,31 @@ describe("News API Indonesia", () => {
           urlToImage: null,
           publishedAt: "2026-06-05T11:00:00.000Z",
           content: "Pemerintah mengumumkan kebijakan publik terbaru.",
+        },
+      ],
+    });
+  });
+
+  test("parses Kompas trending HTML source as top headlines", async () => {
+    const app = createTestApp();
+    const response = await app.request(
+      "/v2/top-headlines?country=id&category=all&sources=kompas-tren&pageSize=10",
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      status: "ok",
+      totalResults: 1,
+      articles: [
+        {
+          source: { id: "kompas-tren", name: "Kompas.com Tren" },
+          author: null,
+          title: "Daftar Berita Trending Hari Ini dari Kompas Tren",
+          description: null,
+          url: "https://www.kompas.com/tren/read/2026/06/05/070000000/daftar-berita-trending-hari-ini",
+          urlToImage: null,
+          publishedAt: null,
+          content: null,
         },
       ],
     });
@@ -164,7 +224,7 @@ describe("News API Indonesia", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({
       status: "ok",
-      totalResults: 3,
+      totalResults: 4,
     });
   });
 
@@ -217,8 +277,82 @@ describe("News API Indonesia", () => {
           language: "id",
           country: "id",
         },
+        {
+          id: "kompas-tren",
+          name: "Kompas.com Tren",
+          description: "Kompas.com Tren Indonesia RSS source",
+          url: "https://www.kompas.com/tren",
+          category: "general",
+          language: "id",
+          country: "id",
+        },
       ],
     });
+  });
+
+  test("falls back to stored CSV articles when a source is blocked", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "beritaku-news-"));
+    const csvPath = join(directory, "news-cache.csv");
+    const articleStore = new CsvArticleStore(csvPath);
+
+    try {
+      await articleStore.writeArticles([
+        {
+          source: { id: "blocked-source", name: "Blocked Source" },
+          author: null,
+          title: "Liputan mendalam tetap tersedia dari cache CSV",
+          description: "Artikel fallback saat website sumber sedang memblokir.",
+          url: "https://example.com/blocked/deep-report",
+          urlToImage: null,
+          publishedAt: "2026-06-05T07:00:00.000Z",
+          content: "Artikel fallback saat website sumber sedang memblokir.",
+        },
+      ]);
+
+      const app = createApp({
+        cacheTtlMs: 0,
+        articleStore,
+        sources: [
+          {
+            id: "blocked-source",
+            name: "Blocked Source",
+            category: "general",
+            country: "id",
+            language: "id",
+            url: "https://example.com/blocked",
+            rssUrl: "https://example.com/blocked.xml",
+          },
+        ],
+        fetchText: async () => {
+          throw new Error("blocked");
+        },
+      });
+
+      const response = await app.request(
+        "/v2/top-headlines?country=id&sources=blocked-source",
+      );
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({
+        status: "ok",
+        totalResults: 1,
+        articles: [
+          {
+            source: { id: "blocked-source", name: "Blocked Source" },
+            author: null,
+            title: "Liputan mendalam tetap tersedia dari cache CSV",
+            description:
+              "Artikel fallback saat website sumber sedang memblokir.",
+            url: "https://example.com/blocked/deep-report",
+            urlToImage: null,
+            publishedAt: "2026-06-05T07:00:00.000Z",
+            content: "Artikel fallback saat website sumber sedang memblokir.",
+          },
+        ],
+      });
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
   });
 
   test("returns NewsAPI-like errors for invalid query parameters", async () => {
@@ -231,5 +365,44 @@ describe("News API Indonesia", () => {
       code: "parameterInvalid",
       message: "country must be id",
     });
+  });
+
+  test("default registry includes requested Indonesian media", () => {
+    const sourceIds = new Set(defaultNewsSources.map((source) => source.id));
+
+    for (const requiredSource of [
+      "kompas-home",
+      "kompas-tren",
+      "tempo-general",
+      "detik-general",
+      "cnn-general",
+      "tirto-general",
+      "cnbc-general",
+      "jakpost-general",
+      "kumparan-general",
+      "liputan6-general",
+      "katadata-general",
+      "idntimes-general",
+      "tribunnews-general",
+      "bisnis-general",
+      "antara-general",
+      "narasi-general",
+      "republika-general",
+      "suara-general",
+      "asumsi-general",
+      "viva-general",
+      "merdeka-general",
+      "project-multatuli-general",
+      "alinea-general",
+      "validnews-general",
+      "kbr-general",
+      "context-general",
+      "techinasia-indonesia",
+      "dailysocial-technology",
+      "mongabay-general",
+      "betahita-general",
+    ]) {
+      expect(sourceIds.has(requiredSource)).toBe(true);
+    }
   });
 });

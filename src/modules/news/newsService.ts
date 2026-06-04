@@ -1,4 +1,5 @@
 import { badRequest } from "../../shared/http/errors";
+import { HtmlAdapter } from "./htmlAdapter";
 import { TimedCache } from "./newsCache";
 import { RssAdapter } from "./rssAdapter";
 import { toPublicSource } from "./sourceRegistry";
@@ -6,6 +7,7 @@ import type {
   EverythingQuery,
   FetchText,
   NewsArticle,
+  NewsArticleStore,
   NewsSource,
   PublicNewsSource,
   TopHeadlinesQuery,
@@ -15,11 +17,13 @@ export interface NewsServiceOptions {
   readonly sources: readonly NewsSource[];
   readonly fetchText: FetchText;
   readonly cacheTtlMs: number;
+  readonly articleStore?: NewsArticleStore;
   readonly onSourceError?: (source: NewsSource, error: unknown) => void;
 }
 
 export class NewsService {
-  private readonly adapter = new RssAdapter();
+  private readonly htmlAdapter = new HtmlAdapter();
+  private readonly rssAdapter = new RssAdapter();
   private readonly cache: TimedCache<readonly NewsArticle[]>;
 
   constructor(private readonly options: NewsServiceOptions) {
@@ -137,10 +141,41 @@ export class NewsService {
       return cached;
     }
 
-    const xml = await this.options.fetchText(source.rssUrl);
-    const articles = this.adapter.parse(xml, source);
+    const articles = await this.fetchFreshSourceArticles(source);
+
     this.cache.set(source.id, articles);
     return articles;
+  }
+
+  private async fetchFreshSourceArticles(
+    source: NewsSource,
+  ): Promise<readonly NewsArticle[]> {
+    try {
+      const feedText = await this.options.fetchText(source.rssUrl);
+      const articles =
+        (source.feedType ?? "rss") === "html"
+          ? this.htmlAdapter.parse(feedText, source)
+          : this.rssAdapter.parse(feedText, source);
+
+      if (articles.length > 0) {
+        return articles;
+      }
+    } catch (error) {
+      const cachedArticles = await this.readStoredArticles(source);
+      if (cachedArticles.length > 0) {
+        return cachedArticles;
+      }
+
+      throw error;
+    }
+
+    return this.readStoredArticles(source);
+  }
+
+  private async readStoredArticles(
+    source: NewsSource,
+  ): Promise<readonly NewsArticle[]> {
+    return this.options.articleStore?.readArticles(source) ?? [];
   }
 }
 

@@ -563,7 +563,7 @@ export async function loadSources() {
     );
     sourceSummary.textContent =
       availableSources.length +
-      " feed aktif dari " +
+      " source aktif dari " +
       publishers.size +
       " grup media. Pilih satu media, atau gunakan Semua media untuk agregasi penuh.";
     syncRequestUrl();

@@ -9,7 +9,8 @@ export const newsCategories = [
 export type NewsCategory = (typeof newsCategories)[number];
 export type NewsCategoryFilter = NewsCategory | "all";
 export type NewsCountry = "id";
-export type NewsLanguage = "id";
+export type NewsLanguage = "id" | "en";
+export type FeedType = "rss" | "html";
 
 export interface NewsSource {
   readonly id: string;
@@ -17,6 +18,8 @@ export interface NewsSource {
   readonly description?: string;
   readonly url: string;
   readonly rssUrl: string;
+  readonly feedType?: FeedType;
+  readonly articlePathIncludes?: readonly string[];
   readonly category: NewsCategory;
   readonly language: NewsLanguage;
   readonly country: NewsCountry;
@@ -64,6 +67,11 @@ export interface EverythingQuery {
   readonly page: number;
   readonly pageSize: number;
   readonly offset: number;
+}
+
+export interface NewsArticleStore {
+  readArticles(source: NewsSource): Promise<readonly NewsArticle[]>;
+  writeArticles(articles: readonly NewsArticle[]): Promise<void>;
 }
 
 export type FetchText = (url: string) => Promise<string>;

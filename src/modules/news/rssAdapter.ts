@@ -87,11 +87,40 @@ function cleanText(value: string | undefined): string | null {
     return null;
   }
 
-  const cleaned = value
+  const cleaned = decodeHtml(value)
     .replace(/<[^>]*>/g, "")
     .replace(/\s+/g, " ")
     .trim();
   return cleaned.length > 0 ? cleaned : null;
+}
+
+function decodeHtml(value: string): string {
+  return value
+    .replace(/&#(\d+);/g, (_entity, codepoint: string) =>
+      decodeCodepoint(Number.parseInt(codepoint, 10)),
+    )
+    .replace(/&#x([0-9a-f]+);/gi, (_entity, codepoint: string) =>
+      decodeCodepoint(Number.parseInt(codepoint, 16)),
+    )
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/gi, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function decodeCodepoint(codepoint: number): string {
+  if (!Number.isFinite(codepoint)) {
+    return "";
+  }
+
+  try {
+    return String.fromCodePoint(codepoint);
+  } catch {
+    return "";
+  }
 }
 
 function getText(value: unknown): string | undefined {

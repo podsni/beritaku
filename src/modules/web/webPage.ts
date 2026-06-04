@@ -31,7 +31,7 @@ export function renderHomePage(): string {
         </nav>
         <div class="rail-note">
           <span class="pulse"></span>
-          <span>Live dari RSS Indonesia dengan cache 5 menit.</span>
+          <span>Live dari RSS, HTML, dan fallback aggregator dengan cache 5 menit.</span>
         </div>
       </aside>
 
@@ -42,7 +42,8 @@ export function renderHomePage(): string {
             <h1>Beritaku API Console</h1>
             <p class="lead">
               Coba endpoint berita Indonesia langsung dari browser, lihat contoh
-              query, dan salin pola request seperti NewsAPI.
+              query, dan salin pola request seperti NewsAPI untuk Kompas,
+              Detik, Tempo, Project Multatuli, Mongabay, dan media nasional lain.
             </p>
           </div>
           <div class="signal-card" aria-label="Ringkasan kemampuan API">
@@ -117,9 +118,10 @@ export function renderHomePage(): string {
             <p>
               Berita terbaru Indonesia berdasarkan kategori dan media. Gunakan
               <code>category=all</code> dan <code>sources=all</code> untuk
-              mengambil semua media.
+              mengambil semua media, atau pilih <code>kompas-tren</code> untuk
+              halaman trending Kompas.
             </p>
-            <pre>curl "http://localhost:3000/v2/top-headlines?country=id&amp;category=all&amp;sources=all&amp;pageSize=10"</pre>
+            <pre>curl "http://localhost:3000/v2/top-headlines?country=id&amp;category=all&amp;sources=kompas-tren&amp;pageSize=10"</pre>
           </article>
 
           <article id="everything" class="doc-card">
@@ -129,15 +131,17 @@ export function renderHomePage(): string {
               Cari artikel dari semua source atau source tertentu. Mendukung
               <code>q</code>, <code>sources</code>, <code>from</code>, <code>to</code>, dan pagination.
             </p>
-            <pre>curl "http://localhost:3000/v2/everything?q=ekonomi&amp;sources=antara-general"</pre>
+            <pre>curl "http://localhost:3000/v2/everything?q=ekonomi&amp;sources=antara-general,cnbc-general"</pre>
           </article>
 
           <article id="sources" class="doc-card">
             <span class="method">GET</span>
             <h2>/v2/top-headlines/sources</h2>
             <p>
-              Daftar source RSS Indonesia yang aktif di registry backend.
-              Tambahkan source baru dari modul registry tanpa mengubah route.
+              Daftar source Indonesia yang aktif di registry backend. Source
+              bisa berupa RSS langsung, adapter HTML Cheerio, fallback Google
+              News RSS, atau CSV fallback dari refresh terakhir saat sumber
+              sedang diblokir.
             </p>
             <pre>curl "http://localhost:3000/v2/top-headlines/sources"</pre>
           </article>
