@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+- **Visual News Feed**: Interactive card-based UI in the explorer console with lazy-loaded images, Indonesian date formatting, and source-specific fallbacks.
+- **Immersive Article Reader**: Premium distraction-free reading mode for articles with:
+  - **Text-to-Speech (TTS)**: Integrated voice narration to listen to articles.
+  - **Typography Controls**: Adjustable font sizes and choice between Serif/Sans-serif fonts.
+  - **Themes**: Multiple reading modes including Light, Sepia (comfort), and Dark (night).
+  - **Progress Tracking**: Reading progress indicator and intuitive navigation.
+- **UX Enhancements**: New tabbed interface in the API explorer to switch between visual feed and raw JSON responses.
 - **HTML Adapter**: Support for parsing news from HTML pages using Cheerio, used for sources without active RSS feeds (e.g., Kompas Home, Kompas Tren).
 - **CSV Article Store**: Persistent local storage for news articles in CSV format to ensure high availability.
 - **Source Fallback**: Automatic fallback to the last known articles from CSV cache when a source fetch fails or is blocked.
@@ -17,11 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **New Dependencies**: Added `cheerio`, `csv-parse`, and `csv-stringify`.
 
 ### Changed
+
 - **Registry Overhaul**: Completely updated `sourceRegistry.ts` with more comprehensive source metadata and adapter configurations.
 - **News Service**: Enhanced `NewsService` to handle multiple adapter types and article storage.
 - **Documentation**: Updated `README.md` with new features, source list, and usage instructions for the refresh script.
 - **Test Suite**: Expanded `index.test.ts` to cover HTML parsing, CSV fallback, and the expanded source registry.
 
 ### Fixed
+
 - Improved error handling and logging for failing news sources.
 - Standardized source IDs and categories across the registry.

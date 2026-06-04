@@ -9,6 +9,9 @@ export function renderHomePage(): string {
       name="description"
       content="Dokumentasi dan API explorer untuk Beritaku News API Indonesia."
     />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/app.css" />
     <script type="module" src="/assets/app.js"></script>
   </head>
@@ -101,10 +104,30 @@ export function renderHomePage(): string {
 
           <div class="result-area">
             <div class="result-toolbar">
-              <span id="request-status">Ready</span>
-              <button class="ghost-action" type="button" id="copy-url">Copy URL</button>
+              <div class="tab-group" role="tablist">
+                <button class="tab-btn active" type="button" id="tab-btn-reader" role="tab" aria-selected="true" aria-controls="tab-content-reader">📖 Feed Pembaca</button>
+                <button class="tab-btn" type="button" id="tab-btn-json" role="tab" aria-selected="false" aria-controls="tab-content-json">💻 Respon JSON</button>
+              </div>
+              <div class="toolbar-status-actions">
+                <span id="request-status">Ready</span>
+                <button class="ghost-action" type="button" id="copy-url">Copy URL</button>
+              </div>
             </div>
-            <pre id="response-output">Pilih parameter, lalu jalankan request.</pre>
+
+            <div class="tab-content" id="tab-content-reader" role="tabpanel" aria-labelledby="tab-btn-reader">
+              <div class="reader-empty" id="reader-empty">
+                <div class="reader-empty-icon">📰</div>
+                <h3>Feed Berita Kosong</h3>
+                <p>Silakan sesuaikan parameter API di atas, lalu klik <strong>Run request</strong> untuk membaca artikel berita terbaru secara visual.</p>
+              </div>
+              <div class="news-feed-grid" id="news-feed-grid" style="display: none;">
+                <!-- Kartu berita akan dirender di sini -->
+              </div>
+            </div>
+
+            <div class="tab-content" id="tab-content-json" role="tabpanel" aria-labelledby="tab-btn-json" style="display: none;">
+              <pre id="response-output">Pilih parameter, lalu jalankan request.</pre>
+            </div>
           </div>
           <div class="source-summary" id="source-summary">
             Memuat daftar media...
@@ -162,6 +185,62 @@ export function renderHomePage(): string {
         </section>
       </section>
     </main>
+
+    <!-- Immersive Article Reader Modal -->
+    <div class="reader-modal" id="reader-modal" aria-hidden="true" role="dialog">
+      <div class="reader-modal-overlay" id="reader-modal-overlay"></div>
+      <div class="reader-modal-container">
+        <header class="reader-control-bar">
+          <div class="reader-ctrl-left">
+            <button class="close-reader-btn" id="close-reader" aria-label="Tutup artikel">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <span class="btn-text">Tutup</span>
+            </button>
+          </div>
+          
+          <div class="reader-ctrl-right">
+            <!-- Audio Listener (TTS) -->
+            <div class="tts-group">
+              <button class="ctrl-btn tts-btn" id="tts-play" title="Dengarkan artikel">
+                <svg class="tts-play-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+                <svg class="tts-pause-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display: none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                <span id="tts-btn-text">Dengarkan</span>
+              </button>
+              <button class="ctrl-btn tts-stop-btn" id="tts-stop" title="Hentikan suara" style="display: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16"></rect></svg>
+              </button>
+            </div>
+            
+            <!-- Font sizing controls -->
+            <div class="font-sizer">
+              <button class="ctrl-btn font-btn" id="btn-font-dec" title="Perkecil huruf">A-</button>
+              <button class="ctrl-btn font-btn" id="btn-font-inc" title="Perbesar huruf">A+</button>
+            </div>
+            
+            <!-- Font Style (Serif / Sans) -->
+            <button class="ctrl-btn style-btn" id="btn-font-family" title="Ubah Gaya Huruf">Serif</button>
+            
+            <!-- Theme dot indicators -->
+            <div class="reader-themes">
+              <button class="theme-dot theme-dot-light active" data-theme="light" title="Tema Terang (Kertas)"></button>
+              <button class="theme-dot theme-dot-sepia" data-theme="sepia" title="Tema Sepia (Mata Nyaman)"></button>
+              <button class="theme-dot theme-dot-dark" data-theme="dark" title="Tema Gelap (Malam)"></button>
+            </div>
+          </div>
+        </header>
+
+        <!-- Progress Indicator -->
+        <div class="reader-progress-wrapper">
+          <div class="reader-progress-fill" id="reader-progress-fill"></div>
+        </div>
+
+        <div class="reader-scroll-area">
+          <article class="reader-body serif-font theme-light" id="reader-article-body">
+            <!-- Dinamis diisi lewat JavaScript -->
+          </article>
+        </div>
+      </div>
+    </div>
   </body>
 </html>`;
 }
