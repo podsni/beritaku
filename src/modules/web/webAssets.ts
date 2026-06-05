@@ -2096,6 +2096,66 @@ h2 {
   margin-top: 32px;
   margin-bottom: 32px;
 }
+
+/* Branded Search Highlight */
+mark {
+  background: rgba(211, 60, 32, 0.15);
+  color: var(--tomato);
+  font-weight: 700;
+  padding: 0 4px;
+  border-radius: 4px;
+}
+
+body.dark-theme mark {
+  background: rgba(198, 234, 89, 0.2);
+  color: var(--mint);
+}
+
+/* Active Search Status Banner */
+.search-status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 14px 24px;
+  border-radius: 8px;
+  margin-bottom: 28px;
+  font-size: 0.92rem;
+  color: var(--muted);
+  box-shadow: var(--shadow);
+  animation: bannerFadeIn 0.3s ease;
+}
+
+@keyframes bannerFadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.search-status-banner strong {
+  color: var(--tomato);
+}
+
+body.dark-theme .search-status-banner strong {
+  color: var(--mint);
+}
+
+.search-clear-btn {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.search-clear-btn:hover {
+  border-color: var(--ink);
+  background: var(--surface);
+}
 `;
 
 export const appJs = `
@@ -2780,11 +2840,12 @@ function renderArticles(articles) {
     
     const title = document.createElement("h3");
     title.className = "card-title";
-    title.textContent = cleanTitle;
+    const searchQuery = (feedSearchInput ? feedSearchInput.value.trim() : "") || (query ? query.value.trim() : "");
+    title.innerHTML = highlightText(cleanTitle, searchQuery);
     
     const desc = document.createElement("p");
     desc.className = "card-desc";
-    desc.textContent = article.description || "Klik untuk membaca selengkapnya.";
+    desc.innerHTML = highlightText(article.description || "Klik untuk membaca selengkapnya.", searchQuery);
     
     cardBody.appendChild(meta);
     cardBody.appendChild(title);
@@ -3207,11 +3268,14 @@ const bookmarkBtn = document.querySelector("#reader-bookmark-toggle");
 const bookmarkBtnText = document.querySelector("#bookmark-btn-text");
 const portalBookmarkFilter = document.querySelector("#portal-bookmark-filter");
 const toastNotification = document.querySelector("#toast-notification");
+const portalSearchStatus = document.querySelector("#portal-search-status");
+const searchStatusQuery = document.querySelector("#search-status-query");
+const portalSearchClear = document.querySelector("#portal-search-clear");
 
 // Estimate reading time at 200 words per minute
 function calculateReadingTime(article) {
   const text = (article.title ?? "") + " " + (article.description ?? "") + " " + (article.content ?? "");
-  const wordCount = text.split(/s+/).filter(w => w).length;
+  const wordCount = text.split(/\\s+/).filter(w => w).length;
   const mins = Math.max(1, Math.ceil(wordCount / 200));
   return mins + " mnt baca";
 }
@@ -3232,6 +3296,7 @@ function getBookmarks() {
   return saved ? JSON.parse(saved) : [];
 }
 
+// Save bookmarks array to localStorage
 function saveBookmarks(bookmarks) {
   localStorage.setItem("beritaku-bookmarks", JSON.stringify(bookmarks));
 }
@@ -3249,6 +3314,49 @@ function updateBookmarkUI() {
   if (bookmarkBtnText) {
     bookmarkBtnText.textContent = active ? "Tersimpan" : "Simpan";
   }
+}
+
+// Get article source category using backend registry
+function getArticleCategory(article) {
+  if (!article.source || !article.source.id) return "general";
+  const src = availableSources.find(s => s.id === article.source.id);
+  return src ? src.category : "general";
+}
+
+// Escapes HTML and highlights active query terms safely
+function highlightText(text, query) {
+  if (!text) return "";
+  if (!query || query.trim() === "") return escapeHtml(text);
+  
+  const escapedText = escapeHtml(text);
+  const words = query.trim().split(/\\s+/).filter(w => w.length > 0);
+  if (words.length === 0) return escapedText;
+  
+  // Escape each word for both HTML and regex
+  const escapedWords = words.map(w => {
+    const htmlEscaped = escapeHtml(w);
+    const escaped = htmlEscaped.replace(/[-/\\\\^$*+?.()|[\\]{}]/g, '\\\\$&');
+    // If word is short (<= 2 chars) and alphanumeric, enforce word boundaries
+    if (w.length <= 2 && /^[a-zA-Z0-9]+$/.test(w)) {
+      return '\\\\b' + escaped + '\\\\b';
+    }
+    return escaped;
+  });
+  
+  // Match either HTML entities or our escaped words
+  const pattern = new RegExp('(&[a-zA-Z0-9#]+;)|(' + escapedWords.join('|') + ')', 'gi');
+  
+  return escapedText.replace(pattern, (match, entity, term) => {
+    if (entity) {
+      const matchedLower = match.toLowerCase();
+      const isSearchTerm = words.some(w => escapeHtml(w).toLowerCase() === matchedLower);
+      if (isSearchTerm) {
+        return '<mark>' + match + '</mark>';
+      }
+      return match;
+    }
+    return '<mark>' + match + '</mark>';
+  });
 }
 
 // Bookmark reader button click handler
@@ -3271,7 +3379,7 @@ if (bookmarkBtn) {
 
     // If currently viewing bookmarks category, reload portal news view
     if (currentPortalCategory === "bookmark") {
-      void loadPortalNews("bookmark", null);
+      void loadPortalNews("bookmark", currentPortalQuery);
     }
   });
 }
@@ -3295,8 +3403,8 @@ if (portalBookmarkFilter) {
   portalBookmarkFilter.addEventListener("click", () => {
     document.querySelectorAll(".portal-cat-btn").forEach(b => b.classList.remove("active"));
     portalBookmarkFilter.classList.add("active");
-    if (portalSearchQ) portalSearchQ.value = "";
-    void loadPortalNews("bookmark", null);
+    const queryVal = portalSearchQ ? portalSearchQ.value : "";
+    void loadPortalNews("bookmark", queryVal);
   });
 }
 
@@ -3315,6 +3423,16 @@ async function loadPortalNews(cat = 'all', q = '', isAppend = false) {
   const portalEmpty = document.querySelector("#portal-empty");
   const tickerItems = document.querySelector("#portal-ticker-items");
 
+  // Show/Hide search banner status
+  if (portalSearchStatus && searchStatusQuery) {
+    if (q && q.trim() !== "") {
+      searchStatusQuery.textContent = q.trim();
+      portalSearchStatus.style.display = "flex";
+    } else {
+      portalSearchStatus.style.display = "none";
+    }
+  }
+
   // Show skeletons
   if (!isAppend) {
     if (portalSkeletons) portalSkeletons.style.display = "grid";
@@ -3329,17 +3447,44 @@ async function loadPortalNews(cat = 'all', q = '', isAppend = false) {
     if (cat === "bookmark") {
       const saved = localStorage.getItem("beritaku-bookmarks");
       const bookmarks = saved ? JSON.parse(saved) : [];
-      data = { status: "ok", articles: bookmarks };
+      
+      let filtered = bookmarks;
+      if (q && q.trim() !== "") {
+        const queryLower = q.toLowerCase().trim();
+        filtered = bookmarks.filter(art => {
+          const matchTitle = (art.title || "").toLowerCase().includes(queryLower);
+          const matchDesc = (art.description || "").toLowerCase().includes(queryLower);
+          const matchContent = (art.content || "").toLowerCase().includes(queryLower);
+          return matchTitle || matchDesc || matchContent;
+        });
+      }
+      data = { status: "ok", articles: filtered };
     } else {
       let url = "/v2/top-headlines?country=id&pageSize=60";
-      if (cat && cat !== "all") {
-        url += "&category=" + cat;
-      }
+      
       if (q && q.trim() !== "") {
         url = "/v2/everything?q=" + encodeURIComponent(q.trim()) + "&pageSize=60";
+        if (cat && cat !== "all") {
+          const catSources = availableSources.filter(s => s.category === cat);
+          if (catSources.length > 0) {
+            const sourceIds = catSources.map(s => s.id).join(",");
+            url += "&sources=" + encodeURIComponent(sourceIds);
+          }
+        }
+      } else if (cat && cat !== "all") {
+        url += "&category=" + cat;
       }
+      
       const response = await fetch(url);
       data = await response.json();
+
+      // If category is active during search, perform category filtering client-side
+      if (q && q.trim() !== "" && cat && cat !== "all") {
+        data.articles = (data.articles ?? []).filter(art => {
+          const artCat = getArticleCategory(art);
+          return artCat === cat;
+        });
+      }
     }
     
     if (portalSkeletons) portalSkeletons.style.display = "none";
@@ -3348,7 +3493,7 @@ async function loadPortalNews(cat = 'all', q = '', isAppend = false) {
       portalArticles = data.articles;
       
       // Populate breaking marquee ticker (first 8 headlines) on fresh load
-      if (!isAppend && tickerItems && cat !== "bookmark") {
+      if (!isAppend && tickerItems && cat !== "bookmark" && (!q || q.trim() === "")) {
         tickerItems.innerHTML = "";
         const tickerArticles = portalArticles.slice(0, 8);
         tickerArticles.forEach(art => {
@@ -3368,8 +3513,8 @@ async function loadPortalNews(cat = 'all', q = '', isAppend = false) {
       if (portalEmpty) {
         portalEmpty.style.display = "flex";
         if (cat === "bookmark") {
-          portalEmpty.querySelector("h3").textContent = "Belum Ada Berita Tersimpan";
-          portalEmpty.querySelector("p").textContent = "Klik tombol bintang ⭐ 'Simpan' di pojok kanan atas artikel pembaca untuk menyimpan berita ke halaman ini.";
+          portalEmpty.querySelector("h3").textContent = q ? "Pencarian Bookmark Tidak Ditemukan" : "Belum Ada Berita Tersimpan";
+          portalEmpty.querySelector("p").textContent = q ? "Coba cari dengan kata kunci lain." : "Klik tombol bintang ⭐ 'Simpan' di pojok kanan atas artikel pembaca untuk menyimpan berita ke halaman ini.";
         } else {
           portalEmpty.querySelector("h3").textContent = "Artikel Berita Tidak Ditemukan";
           portalEmpty.querySelector("p").textContent = "Silakan gunakan kata kunci pencarian lain atau ganti kategori media.";
@@ -3454,8 +3599,8 @@ function renderPortalFeatured(article) {
     '    <span class="featured-badge">' + escapeHtml(sourceName) + '</span>' +
     '    <span class="featured-time">' + escapeHtml(timeStr) + ' · ' + escapeHtml(readTimeStr) + '</span>' +
     '  </div>' +
-    '  <h2 class="featured-title">' + escapeHtml(cleanTitle) + '</h2>' +
-    '  <p class="featured-desc">' + escapeHtml(descText) + '</p>' +
+    '  <h2 class="featured-title">' + highlightText(cleanTitle, currentPortalQuery) + '</h2>' +
+    '  <p class="featured-desc">' + highlightText(descText, currentPortalQuery) + '</p>' +
     '  <button class="featured-read-btn" type="button">Baca Selengkapnya →</button>' +
     '</div>';
 
@@ -3496,8 +3641,8 @@ function renderPortalGrid(articles) {
       '    <span class="card-badge">' + escapeHtml(sourceName) + '</span>' +
       '    <span class="card-time">' + escapeHtml(timeStr) + ' · ' + escapeHtml(readTimeStr) + '</span>' +
       '  </div>' +
-      '  <h3 class="card-title">' + escapeHtml(cleanTitle) + '</h3>' +
-      '  <p class="card-desc">' + escapeHtml(descText) + '</p>' +
+      '  <h3 class="card-title">' + highlightText(cleanTitle, currentPortalQuery) + '</h3>' +
+      '  <p class="card-desc">' + highlightText(descText, currentPortalQuery) + '</p>' +
       '</div>';
 
     card.onclick = () => openReaderModal(article);
@@ -3537,15 +3682,21 @@ const portalSearchGo = document.querySelector("#portal-search-go");
 if (portalSearchGo && portalSearchQ) {
   portalSearchGo.addEventListener("click", () => {
     const queryVal = portalSearchQ.value;
-    document.querySelectorAll(".portal-cat-btn").forEach(btn => btn.classList.remove("active"));
-    void loadPortalNews("all", queryVal);
+    void loadPortalNews(currentPortalCategory, queryVal);
   });
   portalSearchQ.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       const queryVal = portalSearchQ.value;
-      document.querySelectorAll(".portal-cat-btn").forEach(btn => btn.classList.remove("active"));
-      void loadPortalNews("all", queryVal);
+      void loadPortalNews(currentPortalCategory, queryVal);
     }
+  });
+}
+
+// Clear Search Banner click handler
+if (portalSearchClear) {
+  portalSearchClear.addEventListener("click", () => {
+    if (portalSearchQ) portalSearchQ.value = "";
+    void loadPortalNews(currentPortalCategory, "");
   });
 }
 
@@ -3572,8 +3723,8 @@ document.querySelectorAll(".portal-cat-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".portal-cat-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    if (portalSearchQ) portalSearchQ.value = "";
-    void loadPortalNews(btn.dataset.category, null);
+    const queryVal = portalSearchQ ? portalSearchQ.value : "";
+    void loadPortalNews(btn.dataset.category, queryVal);
   });
 });
 

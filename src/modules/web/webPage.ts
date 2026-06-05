@@ -108,6 +108,12 @@ export function renderHomePage(): string {
             </div>
           </div>
 
+          <!-- Active Search Status Banner -->
+          <div id="portal-search-status" class="search-status-banner" style="display: none;">
+            <span>Menampilkan hasil pencarian untuk "<strong id="search-status-query"></strong>"</span>
+            <button id="portal-search-clear" type="button" class="search-clear-btn">Hapus Pencarian</button>
+          </div>
+
           <!-- Featured Headline Story -->
           <div id="portal-featured-story" class="featured-story-card" style="display: none;">
             <!-- Rendered dynamically via JavaScript -->

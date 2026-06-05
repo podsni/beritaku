@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Quick Presets**: Interactive chips for rapid API parameter configuration.
   - **Performance Dashboard**: Real-time stats visualization for API endpoints in the console.
 - **Advanced News Decoding**: Integrated `google-news-url-decoder` and `cloakbrowser` for resilient article link resolution and fetching.
+- **Search & Discovery Improvements**:
+  - **Keyword Highlighting**: Integrated visual highlighting for search terms within titles and descriptions in the news feed.
+  - **Search Status Banner**: New interactive banner showing active search queries with a quick "Hapus Pencarian" option.
+  - **Cross-Filter Support**: Users can now search within specific categories and within their saved bookmarks.
+  - **New Sources**: Added "Project Multatuli English" and "National Geographic Indonesia" to the registry.
 - **Advanced News Portal Features**:
   - **Reading Time Estimation**: Automatic calculation of estimated reading time for all articles.
   - **Article Bookmarking**: Complete system to save/bookmark favorite articles locally with a dedicated "Tersimpan" filter view.

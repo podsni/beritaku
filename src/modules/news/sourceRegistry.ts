@@ -118,6 +118,16 @@ export const defaultNewsSources: readonly NewsSource[] = [
     category: "general",
   }),
   createSource({
+    id: "project-multatuli-english",
+    name: "Project Multatuli English",
+    description:
+      "Public service and investigative journalism for marginalized groups, English edition",
+    url: "https://projectmultatuli.org/en/",
+    rssUrl: "https://projectmultatuli.org/en/feed/",
+    category: "general",
+    language: "en",
+  }),
+  createSource({
     id: "alinea-general",
     name: "Alinea.id",
     description:
@@ -366,6 +376,15 @@ export const defaultNewsSources: readonly NewsSource[] = [
       "Jurnalisme lingkungan, deforestasi, konservasi, dan keanekaragaman hayati",
     url: "https://www.mongabay.co.id",
     rssUrl: "https://www.mongabay.co.id/feed",
+    category: "general",
+  }),
+  createSource({
+    id: "nationalgeographic-general",
+    name: "National Geographic Indonesia",
+    description:
+      "Kabar sains, geografi, sejarah, petualangan, dan eksplorasi lingkungan populer",
+    url: "https://nationalgeographic.grid.id",
+    rssUrl: googleNewsRssUrl("nationalgeographic.grid.id"),
     category: "general",
   }),
   createSource({
