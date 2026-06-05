@@ -19,7 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Quick Presets**: Interactive chips for rapid API parameter configuration.
   - **Performance Dashboard**: Real-time stats visualization for API endpoints in the console.
 - **Advanced News Decoding**: Integrated `google-news-url-decoder` and `cloakbrowser` for resilient article link resolution and fetching.
-- **Visual News Feed**: Interactive card-based UI in the explorer console with lazy-loaded images, Indonesian date formatting, and source-specific fallbacks.
+- **Advanced UI Refinements**:
+  - **Editorial Design**: Re-designed the API explorer with a refined editorial aesthetic, including a grain overlay and high-contrast typography.
+  - **Sidebar Rail**: New sticky navigation sidebar for switching between API endpoints and views.
+  - **Searchable Selects v2**: Completely re-designed searchable selects with smoother animations and better accessibility.
+  - **Typography Overhaul**: Integrated "Playfair Display" for headings and "Lora" for article reading to provide a premium feel.
+- **API Documentation**: Added comprehensive `API_DOCUMENTATION.md` with integration guides for JavaScript, Python, and TypeScript, plus cURL examples.
+- **Utility Test Scripts**: Added specialized scripts in `src/scripts/` for testing base64 encoding, URL decoding, and mutex behavior.
 - **Immersive Article Reader**: Premium distraction-free reading mode for articles with:
   - **Text-to-Speech (TTS)**: Integrated voice narration to listen to articles.
   - **Typography Controls**: Adjustable font sizes and choice between Serif/Sans-serif fonts.
