@@ -53,6 +53,7 @@ export interface TopHeadlinesQuery {
   readonly country: NewsCountry;
   readonly category: NewsCategoryFilter;
   readonly sources?: readonly string[];
+  readonly language?: NewsLanguage;
   readonly page: number;
   readonly pageSize: number;
   readonly offset: number;
@@ -64,6 +65,7 @@ export interface EverythingQuery {
   readonly from?: Date;
   readonly to?: Date;
   readonly sortBy: "publishedAt";
+  readonly language?: NewsLanguage;
   readonly page: number;
   readonly pageSize: number;
   readonly offset: number;

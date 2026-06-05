@@ -42,6 +42,7 @@ async function fetchText(url: string): Promise<string> {
     headers: {
       "user-agent": "beritaku-news-api/1.0",
     },
+    signal: AbortSignal.timeout(10_000),
   });
 
   if (!response.ok) {

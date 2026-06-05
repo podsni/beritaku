@@ -32,6 +32,13 @@ export function renderHomePage(): string {
           <a href="#sources">Sources</a>
           <a href="#errors">Errors</a>
         </nav>
+        
+        <button id="global-theme-toggle" class="theme-toggle-btn" type="button" aria-label="Ubah tema warna global">
+          <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+          <svg class="moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          <span id="theme-btn-text">Mode Gelap</span>
+        </button>
+
         <div class="rail-note">
           <span class="pulse"></span>
           <span>Live dari RSS, HTML, dan fallback aggregator dengan cache 5 menit.</span>
@@ -48,6 +55,20 @@ export function renderHomePage(): string {
               query, dan salin pola request seperti NewsAPI untuk Kompas,
               Detik, Tempo, Project Multatuli, Mongabay, dan media nasional lain.
             </p>
+            <div class="endpoint-stats" aria-label="Ringkasan status console">
+              <div class="stat-tile">
+                <span id="stat-sources">--</span>
+                <small>Source aktif</small>
+              </div>
+              <div class="stat-tile">
+                <span id="stat-results">0</span>
+                <small>Artikel terakhir</small>
+              </div>
+              <div class="stat-tile">
+                <span id="stat-cache">Ready</span>
+                <small>Status request</small>
+              </div>
+            </div>
           </div>
           <div class="signal-card" aria-label="Ringkasan kemampuan API">
             <span>API v2</span>
@@ -63,6 +84,13 @@ export function renderHomePage(): string {
               <h2>API Explorer</h2>
             </div>
             <code id="request-url">/v2/top-headlines?country=id&amp;category=all&amp;sources=all&amp;pageSize=10</code>
+          </div>
+
+          <div class="quick-presets" aria-label="Preset request cepat">
+            <button type="button" class="preset-chip active" data-preset="breaking">Breaking nasional</button>
+            <button type="button" class="preset-chip" data-preset="tech">Teknologi</button>
+            <button type="button" class="preset-chip" data-preset="business">Bisnis</button>
+            <button type="button" class="preset-chip" data-preset="search">Cari ekonomi</button>
           </div>
 
           <form class="request-grid" id="api-form">
@@ -89,10 +117,31 @@ export function renderHomePage(): string {
               <span>Search</span>
               <input name="q" id="q" placeholder="ekonomi, AI, olahraga" />
             </label>
-            <label>
+            <label class="custom-select-wrapper">
               <span>Pilih media</span>
-              <select name="sources" id="sourcesInput">
-                <option value="all">Semua media</option>
+              <div class="custom-select" id="custom-sources-select">
+                <div class="custom-select-trigger" tabindex="0">
+                  <span id="selected-source-text">Semua media</span>
+                  <svg class="select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="custom-select-dropdown">
+                  <div class="custom-select-search-container">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="dropdown-search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="sources-search-input" placeholder="Cari media..." autocomplete="off" />
+                  </div>
+                  <ul class="custom-select-options" id="custom-sources-options">
+                    <!-- Dynamic options populate here -->
+                  </ul>
+                </div>
+              </div>
+              <input type="hidden" name="sources" id="sourcesInput" value="all" />
+            </label>
+            <label>
+              <span>Bahasa</span>
+              <select name="language" id="languageSelect">
+                <option value="all">Semua bahasa</option>
+                <option value="id">Bahasa Indonesia</option>
+                <option value="en">English (Inggris)</option>
               </select>
             </label>
             <label>
@@ -105,23 +154,44 @@ export function renderHomePage(): string {
           <div class="result-area">
             <div class="result-toolbar">
               <div class="tab-group" role="tablist">
-                <button class="tab-btn active" type="button" id="tab-btn-reader" role="tab" aria-selected="true" aria-controls="tab-content-reader">📖 Feed Pembaca</button>
-                <button class="tab-btn" type="button" id="tab-btn-json" role="tab" aria-selected="false" aria-controls="tab-content-json">💻 Respon JSON</button>
+                <button class="tab-btn active" type="button" id="tab-btn-reader" role="tab" aria-selected="true" aria-controls="tab-content-reader">Feed Pembaca</button>
+                <button class="tab-btn" type="button" id="tab-btn-json" role="tab" aria-selected="false" aria-controls="tab-content-json">Respon JSON</button>
               </div>
               <div class="toolbar-status-actions">
-                <span id="request-status">Ready</span>
+                <span id="request-status" role="status" aria-live="polite">Ready</span>
                 <button class="ghost-action" type="button" id="copy-url">Copy URL</button>
               </div>
             </div>
 
             <div class="tab-content" id="tab-content-reader" role="tabpanel" aria-labelledby="tab-btn-reader">
+              <!-- Filter & Search Bar -->
+              <div class="feed-header-bar" id="feed-header-bar" style="display: none;">
+                <div class="feed-search-box">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  <input type="text" id="feed-search-input" placeholder="Cari di feed ini (Tekan Enter untuk cari di server)..." />
+                </div>
+                <div class="feed-language-filter">
+                  <button class="lang-tag active" data-lang="all" type="button">Semua</button>
+                  <button class="lang-tag" data-lang="id" type="button">🇮🇩 ID</button>
+                  <button class="lang-tag" data-lang="en" type="button">🇬🇧 EN</button>
+                </div>
+              </div>
+
               <div class="reader-empty" id="reader-empty">
-                <div class="reader-empty-icon">📰</div>
+                <div class="reader-empty-icon" aria-hidden="true"></div>
                 <h3>Feed Berita Kosong</h3>
                 <p>Silakan sesuaikan parameter API di atas, lalu klik <strong>Run request</strong> untuk membaca artikel berita terbaru secara visual.</p>
               </div>
               <div class="news-feed-grid" id="news-feed-grid" style="display: none;">
                 <!-- Kartu berita akan dirender di sini -->
+              </div>
+
+              <!-- Footer Load More -->
+              <div class="feed-footer" id="feed-footer" style="display: none;">
+                <button class="load-more-btn" id="load-more-btn" type="button">
+                  <span>Muat Lebih Banyak</span>
+                  <svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+                </button>
               </div>
             </div>
 

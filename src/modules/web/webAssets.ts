@@ -13,6 +13,20 @@ export const appCss = `
   --shadow: 0 24px 80px rgb(25 35 31 / 14%);
 }
 
+body.dark-theme {
+  color-scheme: dark;
+  --ink: #e2e8f0;
+  --muted: #94a3b8;
+  --line: #334155;
+  --paper: #0f172a;
+  --surface: #1e293b;
+  --charcoal: #020617;
+  --mint: #38bdf8;
+  --tomato: #fb7185;
+  --sky: #60a5fa;
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -29,7 +43,15 @@ body {
     linear-gradient(90deg, rgb(25 35 31 / 5%) 1px, transparent 1px),
     linear-gradient(0deg, rgb(25 35 31 / 4%) 1px, transparent 1px), var(--paper);
   background-size: 36px 36px;
-  font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+  font-family: "Plus Jakarta Sans", "Avenir Next", "Gill Sans", sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-theme {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px), var(--paper);
+  background-size: 36px 36px;
 }
 
 button,
@@ -195,6 +217,49 @@ h2 {
   line-height: 1.65;
 }
 
+.endpoint-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 620px;
+  margin-top: 22px;
+}
+
+.stat-tile {
+  min-width: 0;
+  padding: 12px;
+  background: rgb(255 253 246 / 72%);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+body.dark-theme .stat-tile {
+  background: rgb(30 41 59 / 74%);
+}
+
+.stat-tile span,
+.stat-tile small {
+  display: block;
+}
+
+.stat-tile span {
+  color: var(--charcoal);
+  font-size: 1.2rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+body.dark-theme .stat-tile span {
+  color: var(--ink);
+}
+
+.stat-tile small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
 .signal-card,
 .panel,
 .doc-card {
@@ -279,9 +344,40 @@ h2 {
 
 .request-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) auto;
   gap: 12px;
   align-items: end;
+}
+
+.quick-presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: -4px 0 18px;
+}
+
+.preset-chip {
+  min-height: 38px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: rgb(124 199 216 / 12%);
+  border: 1px solid rgb(124 199 216 / 34%);
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 850;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.preset-chip:hover {
+  border-color: var(--sky);
+  transform: translateY(-1px);
+}
+
+.preset-chip.active {
+  color: var(--charcoal);
+  background: var(--mint);
+  border-color: var(--charcoal);
 }
 
 label {
@@ -302,15 +398,203 @@ select {
   min-height: 44px;
   padding: 0 12px;
   color: var(--ink);
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
+  transition: all 0.2s ease;
 }
 
 input:focus,
 select:focus {
   outline: 3px solid rgb(124 199 216 / 38%);
   border-color: var(--sky);
+}
+
+/* Custom Searchable Select */
+.custom-select-wrapper {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.custom-select {
+  position: relative;
+  width: 100%;
+  user-select: none;
+}
+
+.custom-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.custom-select-trigger:focus-within,
+.custom-select.open .custom-select-trigger {
+  outline: 3px solid rgb(124 199 216 / 38%);
+  border-color: var(--sky);
+}
+
+.custom-select-trigger span {
+  font-size: 0.95rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-chevron {
+  color: var(--muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.custom-select.open .select-chevron {
+  transform: rotate(180deg);
+}
+
+.custom-select-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  max-height: 350px;
+  overflow: hidden;
+}
+
+body.dark-theme .custom-select-dropdown {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  background: #1f2723;
+  border-color: #2e3b35;
+}
+
+.custom-select.open .custom-select-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.custom-select-search-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(25, 35, 31, 0.01);
+}
+
+body.dark-theme .custom-select-search-container {
+  border-bottom-color: #2e3b35;
+}
+
+.dropdown-search-icon {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+#sources-search-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 4px 0;
+  min-height: auto;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+#sources-search-input:focus {
+  outline: none;
+  border: none;
+}
+
+.custom-select-options {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.custom-select-group-header {
+  padding: 6px 12px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(25, 35, 31, 0.02);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+body.dark-theme .custom-select-group-header {
+  background: #252e2a;
+}
+
+.custom-select-option {
+  padding: 8px 16px;
+  font-size: 0.92rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.15s ease, color 0.15s ease;
+  color: var(--ink);
+}
+
+.custom-select-option:hover,
+.custom-select-option.hovered {
+  background: rgba(124, 199, 216, 0.08);
+  color: var(--sky);
+}
+
+body.dark-theme .custom-select-option:hover,
+body.dark-theme .custom-select-option.hovered {
+  background: rgba(124, 199, 216, 0.15);
+}
+
+.custom-select-option.selected {
+  font-weight: 700;
+  background: rgba(124, 199, 216, 0.12);
+  color: var(--sky);
+}
+
+.custom-select-option.hidden,
+.custom-select-option.lang-filtered-hidden {
+  display: none !important;
+}
+
+.custom-select-group.hidden {
+  display: none !important;
+}
+
+.custom-select-no-results {
+  padding: 16px;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--muted);
 }
 
 .primary-action,
@@ -320,6 +604,7 @@ select:focus {
   border-radius: 8px;
   font-weight: 900;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .primary-action {
@@ -330,12 +615,46 @@ select:focus {
 
 .primary-action:hover {
   filter: brightness(0.96);
+  transform: translateY(-1px);
 }
 
 .ghost-action {
-  color: var(--charcoal);
+  color: var(--ink);
   background: transparent;
   border: 1px solid var(--line);
+}
+
+.ghost-action:hover {
+  background: rgba(25, 35, 31, 0.04);
+}
+
+body.dark-theme .ghost-action:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  margin-top: auto;
+  background: transparent;
+  color: rgb(244 240 223 / 78%);
+  border: 1px solid rgb(244 240 223 / 14%);
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle-btn:hover {
+  color: #fff;
+  border-color: var(--mint);
+  background: rgb(255 255 255 / 6%);
 }
 
 .result-area {
@@ -446,9 +765,38 @@ pre {
 }
 
 .reader-empty-icon {
-  font-size: 3.5rem;
+  position: relative;
+  width: 52px;
+  height: 52px;
   margin-bottom: 16px;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 8px;
   animation: float-icon 4s ease-in-out infinite;
+}
+
+.reader-empty-icon::before,
+.reader-empty-icon::after {
+  position: absolute;
+  right: 10px;
+  left: 10px;
+  height: 2px;
+  content: "";
+  background: var(--muted);
+  border-radius: 999px;
+}
+
+.reader-empty-icon::before {
+  top: 17px;
+  box-shadow: 0 8px 0 var(--muted), 0 16px 0 var(--muted);
+}
+
+.reader-empty-icon::after {
+  top: 10px;
+  right: auto;
+  width: 8px;
+  height: 32px;
+  background: var(--sky);
 }
 
 .reader-empty h3 {
@@ -471,6 +819,128 @@ pre {
   50% { transform: translateY(-8px) rotate(2deg); }
 }
 
+/* Feed Header Bar */
+.feed-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px 8px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid rgba(25, 35, 31, 0.05);
+}
+
+.feed-search-box {
+  position: relative;
+  flex-grow: 1;
+  max-width: 400px;
+}
+
+.feed-search-box .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+#feed-search-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 16px 0 38px;
+  font-size: 0.9rem;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: #fff;
+  transition: all 0.25s ease;
+}
+
+#feed-search-input:focus {
+  outline: none;
+  border-color: var(--sky);
+  box-shadow: 0 0 0 3px rgb(124 199 216 / 20%);
+}
+
+.feed-language-filter {
+  display: flex;
+  gap: 6px;
+}
+
+.lang-tag {
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lang-tag:hover {
+  border-color: var(--charcoal);
+  color: var(--charcoal);
+}
+
+.lang-tag.active {
+  background: var(--charcoal);
+  color: #fff;
+  border-color: var(--charcoal);
+}
+
+/* Feed Footer / Load More */
+.feed-footer {
+  display: flex;
+  justify-content: center;
+  padding: 24px 24px 40px 24px;
+  background: var(--surface);
+}
+
+.load-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 24px;
+  border-radius: 23px;
+  background: var(--surface);
+  border: 2px solid var(--charcoal);
+  color: var(--charcoal);
+  font-weight: 900;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(25, 35, 31, 0.05);
+}
+
+.load-more-btn:hover {
+  background: var(--charcoal);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(25, 35, 31, 0.12);
+}
+
+.load-more-btn:active {
+  transform: translateY(0);
+}
+
+.load-more-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.spinner {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  100% { transform: rotate(360deg); }
+}
+
 /* News feed grid */
 .news-feed-grid {
   display: grid;
@@ -483,11 +953,13 @@ pre {
 .news-card {
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
+  content-visibility: auto;
+  contain-intrinsic-size: 360px;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -996,6 +1468,65 @@ body.reader-open {
   100% { background-position: 200% 0; }
 }
 
+.skeleton-shimmer {
+  background: linear-gradient(90deg, var(--line) 25%, rgba(25, 35, 31, 0.08) 50%, var(--line) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+body.dark-theme .skeleton-shimmer {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 200% 100%;
+}
+
+.news-card.skeleton {
+  pointer-events: none;
+  cursor: default;
+  border-color: var(--line);
+}
+
+.skeleton-badge {
+  display: inline-block;
+  width: 80px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.skeleton-time {
+  display: inline-block;
+  width: 60px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.skeleton-title {
+  width: 90%;
+  height: 20px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.skeleton-title-short {
+  width: 60%;
+  height: 20px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+}
+
+.skeleton-desc {
+  width: 100%;
+  height: 14px;
+  margin-bottom: 6px;
+  border-radius: 4px;
+}
+
+.skeleton-desc-short {
+  width: 75%;
+  height: 14px;
+  border-radius: 4px;
+}
+
 .card-img-container.loading {
   background: linear-gradient(90deg, rgba(25, 35, 31, 0.03) 25%, rgba(25, 35, 31, 0.08) 50%, rgba(25, 35, 31, 0.03) 75%);
   background-size: 200% 100%;
@@ -1076,6 +1607,61 @@ body.reader-open {
   .reader-ctrl-right {
     gap: 8px;
   }
+
+  /* Compact feed search bar on mobile */
+  .feed-header-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 18px 8px 18px;
+  }
+
+  .feed-search-box {
+    max-width: 100%;
+  }
+
+  .feed-language-filter {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 520px) {
+  h1 {
+    font-size: 2.45rem;
+    line-height: 1;
+  }
+
+  .lead {
+    font-size: 0.98rem;
+  }
+
+  .endpoint-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-presets {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .preset-chip {
+    width: 100%;
+  }
+
+  .news-feed-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .tab-group,
+  .toolbar-status-actions {
+    width: 100%;
+  }
+
+  .tab-btn {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1096,6 +1682,17 @@ body.reader-open {
     padding-left: 8px;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 `;
 
 export const appJs = `
@@ -1104,12 +1701,18 @@ const endpoint = document.querySelector("#endpoint");
 const category = document.querySelector("#category");
 const query = document.querySelector("#q");
 const sourcesInput = document.querySelector("#sourcesInput");
+const languageSelect = document.querySelector("#languageSelect");
 const pageSize = document.querySelector("#pageSize");
 const requestUrl = document.querySelector("#request-url");
 const requestStatus = document.querySelector("#request-status");
 const responseOutput = document.querySelector("#response-output");
 const copyUrl = document.querySelector("#copy-url");
 const sourceSummary = document.querySelector("#source-summary");
+const quickPresets = document.querySelector(".quick-presets");
+const presetButtons = document.querySelectorAll(".preset-chip");
+const statSources = document.querySelector("#stat-sources");
+const statResults = document.querySelector("#stat-results");
+const statCache = document.querySelector("#stat-cache");
 
 // Tab Switcher Elements
 const tabBtnReader = document.querySelector("#tab-btn-reader");
@@ -1120,6 +1723,11 @@ const tabContentJson = document.querySelector("#tab-content-json");
 // News Feed Elements
 const newsFeedGrid = document.querySelector("#news-feed-grid");
 const readerEmpty = document.querySelector("#reader-empty");
+const feedHeaderBar = document.querySelector("#feed-header-bar");
+const feedSearchInput = document.querySelector("#feed-search-input");
+const langTags = document.querySelectorAll(".lang-tag");
+const loadMoreBtn = document.querySelector("#load-more-btn");
+const feedFooter = document.querySelector("#feed-footer");
 
 // Immersive Reader Modal Elements
 const readerModal = document.querySelector("#reader-modal");
@@ -1138,12 +1746,62 @@ const btnFontInc = document.querySelector("#btn-font-inc");
 const btnFontFamily = document.querySelector("#btn-font-family");
 const themeDots = document.querySelectorAll(".theme-dot");
 
+// Global Dark Mode Theme Toggle
+const themeToggleBtn = document.querySelector("#global-theme-toggle");
+const themeBtnText = document.querySelector("#theme-btn-text");
+const sunIcon = themeToggleBtn ? themeToggleBtn.querySelector(".sun-icon") : null;
+const moonIcon = themeToggleBtn ? themeToggleBtn.querySelector(".moon-icon") : null;
+
+function applySavedGlobalTheme() {
+  if (!themeToggleBtn) return;
+  const savedTheme = localStorage.getItem("global-theme") || "light";
+  if (savedTheme === "dark") {
+    document.body.classList.add("dark-theme");
+    if (sunIcon) sunIcon.style.display = "inline-block";
+    if (moonIcon) moonIcon.style.display = "none";
+    if (themeBtnText) themeBtnText.textContent = "Mode Terang";
+  } else {
+    document.body.classList.remove("dark-theme");
+    if (sunIcon) sunIcon.style.display = "none";
+    if (moonIcon) moonIcon.style.display = "inline-block";
+    if (themeBtnText) themeBtnText.textContent = "Mode Gelap";
+  }
+}
+
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener("click", () => {
+    const isDark = document.body.classList.toggle("dark-theme");
+    if (isDark) {
+      localStorage.setItem("global-theme", "dark");
+      if (sunIcon) sunIcon.style.display = "inline-block";
+      if (moonIcon) moonIcon.style.display = "none";
+      if (themeBtnText) themeBtnText.textContent = "Mode Terang";
+    } else {
+      localStorage.setItem("global-theme", "light");
+      if (sunIcon) sunIcon.style.display = "none";
+      if (moonIcon) moonIcon.style.display = "inline-block";
+      if (themeBtnText) themeBtnText.textContent = "Mode Gelap";
+    }
+  });
+}
+
+// Call on startup
+applySavedGlobalTheme();
+
 let availableSources = [];
 let currentArticles = [];
 let activeArticle = null;
 let ttsUtterance = null;
 let isTtsPlaying = false;
 let isTtsPaused = false;
+
+// Query and Pagination State
+let currentQueryUrl = "";
+let currentPage = 1;
+let totalResults = 0;
+let selectedLanguage = "all";
+let activeFeedArticles = [];
+let activeRequestController = null;
 
 // Caching options
 const apiCache = new Map();
@@ -1153,6 +1811,40 @@ const CACHE_TTL_MS = 60000; // 1 minute client-side cache
 let currentFontSize = 18; // default in px
 let isSerif = true;
 let currentTheme = "light";
+
+function setRequestStatus(message) {
+  requestStatus.textContent = message;
+  if (statCache) {
+    statCache.textContent = message;
+  }
+}
+
+function updateEndpointStats(payload) {
+  if (statSources) {
+    statSources.textContent =
+      availableSources.length === 0 ? "--" : String(availableSources.length);
+  }
+
+  if (statResults) {
+    const resultCount = payload && typeof payload.totalResults === "number"
+      ? payload.totalResults
+      : activeFeedArticles.length;
+    statResults.textContent = String(resultCount);
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value);
+}
 
 function buildRequestPath() {
   const path = endpoint.value;
@@ -1172,8 +1864,13 @@ function buildRequestPath() {
     params.set("sources", sourcesInput.value);
   }
 
-  if (path !== "/v2/top-headlines/sources" && pageSize.value.trim() !== "") {
-    params.set("pageSize", pageSize.value.trim());
+  if (path !== "/v2/top-headlines/sources") {
+    if (languageSelect.value !== "all") {
+      params.set("language", languageSelect.value);
+    }
+    if (pageSize.value.trim() !== "") {
+      params.set("pageSize", pageSize.value.trim());
+    }
   }
 
   const queryString = params.toString();
@@ -1190,12 +1887,59 @@ function syncFields() {
   const showSearch = path === "/v2/everything";
   const showSources = path !== "/v2/top-headlines/sources";
   const showPageSize = path !== "/v2/top-headlines/sources";
+  const showLanguage = path !== "/v2/top-headlines/sources";
 
   category.closest("label").hidden = !showCategory;
   query.closest("label").hidden = !showSearch;
   sourcesInput.closest("label").hidden = !showSources;
+  languageSelect.closest("label").hidden = !showLanguage;
   pageSize.closest("label").hidden = !showPageSize;
   syncRequestUrl();
+}
+
+function applyPreset(preset) {
+  presetButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.preset === preset);
+  });
+
+  sourcesInput.value = "all";
+  languageSelect.value = "all";
+  pageSize.value = "12";
+
+  if (preset === "tech") {
+    endpoint.value = "/v2/top-headlines";
+    category.value = "technology";
+    query.value = "";
+  } else if (preset === "business") {
+    endpoint.value = "/v2/top-headlines";
+    category.value = "business";
+    query.value = "";
+  } else if (preset === "search") {
+    endpoint.value = "/v2/everything";
+    category.value = "all";
+    query.value = "ekonomi";
+  } else {
+    endpoint.value = "/v2/top-headlines";
+    category.value = "all";
+    query.value = "";
+  }
+
+  const selectedText = document.querySelector("#selected-source-text");
+  if (selectedText) {
+    selectedText.textContent = "Semua media";
+  }
+
+  const customSelect = document.querySelector("#custom-sources-select");
+  if (customSelect) {
+    customSelect.querySelectorAll(".custom-select-option").forEach((option) => {
+      option.classList.toggle(
+        "selected",
+        option.getAttribute("data-value") === "all",
+      );
+    });
+  }
+
+  syncFields();
 }
 
 export async function loadSources() {
@@ -1204,14 +1948,64 @@ export async function loadSources() {
     const payload = await response.json();
     availableSources = payload.sources ?? [];
 
-    sourcesInput.textContent = "";
-    sourcesInput.append(createSourceOption("all", "Semua media"));
+    const optionsContainer = document.querySelector("#custom-sources-options");
+    if (!optionsContainer) return;
+    optionsContainer.innerHTML = "";
 
-    for (const source of availableSources) {
-      sourcesInput.append(
-        createSourceOption(source.id, source.name + " - " + source.category),
-      );
+    // Add "Semua media"
+    const allOption = document.createElement("li");
+    allOption.className = "custom-select-option selected";
+    allOption.setAttribute("data-value", "all");
+    allOption.textContent = "Semua media";
+    optionsContainer.appendChild(allOption);
+
+    // Group elements
+    const idSources = availableSources.filter(s => s.language !== "en");
+    const enSources = availableSources.filter(s => s.language === "en");
+
+    if (idSources.length > 0) {
+      const idHeader = document.createElement("div");
+      idHeader.className = "custom-select-group-header";
+      idHeader.setAttribute("data-group", "id");
+      idHeader.textContent = "🇮🇩 Bahasa Indonesia";
+      optionsContainer.appendChild(idHeader);
+
+      idSources.forEach(source => {
+        const opt = document.createElement("li");
+        opt.className = "custom-select-option";
+        opt.setAttribute("data-value", source.id);
+        opt.setAttribute("data-group", "id");
+        opt.textContent = source.name + " - " + source.category;
+        optionsContainer.appendChild(opt);
+      });
     }
+
+    if (enSources.length > 0) {
+      const enHeader = document.createElement("div");
+      enHeader.className = "custom-select-group-header";
+      enHeader.setAttribute("data-group", "en");
+      enHeader.textContent = "🇬🇧 English";
+      optionsContainer.appendChild(enHeader);
+
+      enSources.forEach(source => {
+        const opt = document.createElement("li");
+        opt.className = "custom-select-option";
+        opt.setAttribute("data-value", source.id);
+        opt.setAttribute("data-group", "en");
+        opt.textContent = source.name + " - " + source.category;
+        optionsContainer.appendChild(opt);
+      });
+    }
+
+    // Add "No results" element
+    const noResults = document.createElement("div");
+    noResults.className = "custom-select-no-results";
+    noResults.style.display = "none";
+    noResults.textContent = "Media tidak ditemukan";
+    optionsContainer.appendChild(noResults);
+
+    // Setup interactive handlers for option clicks
+    setupCustomSelectHandlers();
 
     const publishers = new Set(
       availableSources.map((source) => source.id.split("-")[0]),
@@ -1221,18 +2015,218 @@ export async function loadSources() {
       " source aktif dari " +
       publishers.size +
       " grup media. Pilih satu media, atau gunakan Semua media untuk agregasi penuh.";
+    updateEndpointStats();
     syncRequestUrl();
   } catch (error) {
     sourceSummary.textContent =
       "Daftar media belum bisa dimuat. Explorer tetap bisa memakai sources=all.";
+    updateEndpointStats();
   }
 }
 
-function createSourceOption(value, label) {
-  const option = document.createElement("option");
-  option.value = value;
-  option.textContent = label;
-  return option;
+function setupCustomSelectHandlers() {
+  const customSelect = document.querySelector("#custom-sources-select");
+  if (!customSelect) return;
+  const trigger = customSelect.querySelector(".custom-select-trigger");
+  const selectedText = customSelect.querySelector("#selected-source-text");
+  const searchInput = customSelect.querySelector("#sources-search-input");
+  const options = customSelect.querySelectorAll(".custom-select-option");
+  const headers = customSelect.querySelectorAll(".custom-select-group-header");
+  const noResults = customSelect.querySelector(".custom-select-no-results");
+  const hiddenInput = document.querySelector("#sourcesInput");
+  const languageSelect = document.querySelector("#languageSelect");
+
+  if (!trigger || !selectedText || !searchInput || !hiddenInput) return;
+
+  let activeIndex = -1;
+
+  const getVisibleOptions = () => {
+    return Array.from(options).filter(
+      (opt) =>
+        !opt.classList.contains("hidden") &&
+        !opt.classList.contains("lang-filtered-hidden"),
+    );
+  };
+
+  const highlightActive = (visibleOpts) => {
+    visibleOpts.forEach((opt, idx) => {
+      if (idx === activeIndex) {
+        opt.classList.add("hovered");
+        opt.scrollIntoView({ block: "nearest" });
+      } else {
+        opt.classList.remove("hovered");
+      }
+    });
+  };
+
+  // Toggle open
+  trigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    customSelect.classList.toggle("open");
+    if (customSelect.classList.contains("open")) {
+      searchInput.value = "";
+      activeIndex = -1;
+      options.forEach((o) => o.classList.remove("hovered"));
+      searchInput.dispatchEvent(new Event("input"));
+      searchInput.focus();
+    }
+  });
+
+  // Close when clicking outside
+  document.addEventListener("click", () => {
+    customSelect.classList.remove("open");
+  });
+
+  customSelect.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
+
+  // Handle option selection
+  options.forEach((opt) => {
+    opt.addEventListener("click", () => {
+      options.forEach((o) => {
+        o.classList.remove("selected");
+        o.classList.remove("hovered");
+      });
+      opt.classList.add("selected");
+      selectedText.textContent = opt.textContent;
+      hiddenInput.value = opt.getAttribute("data-value");
+      customSelect.classList.remove("open");
+      
+      // Sync language select if a specific source is selected
+      const group = opt.getAttribute("data-group");
+      if (group && languageSelect) {
+        languageSelect.value = group;
+        languageSelect.dispatchEvent(new Event("change"));
+      }
+      
+      // Trigger native change event so Hono updates request URL
+      hiddenInput.dispatchEvent(new Event("change"));
+    });
+  });
+
+  // Keyboard navigation on search input
+  searchInput.addEventListener("keydown", (e) => {
+    const visibleOpts = getVisibleOptions();
+    if (visibleOpts.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeIndex = (activeIndex + 1) % visibleOpts.length;
+      highlightActive(visibleOpts);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeIndex = (activeIndex - 1 + visibleOpts.length) % visibleOpts.length;
+      highlightActive(visibleOpts);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (activeIndex >= 0 && activeIndex < visibleOpts.length) {
+        visibleOpts[activeIndex].click();
+      }
+    } else if (e.key === "Escape") {
+      customSelect.classList.remove("open");
+    }
+  });
+
+  // Filter options based on language selection
+  const filterByLanguage = () => {
+    const lang = languageSelect ? languageSelect.value : "all";
+    options.forEach((opt) => {
+      const val = opt.getAttribute("data-value");
+      if (val === "all") return;
+      const group = opt.getAttribute("data-group");
+      
+      if (lang === "all" || (lang === "id" && group === "id") || (lang === "en" && group === "en")) {
+        opt.classList.remove("lang-filtered-hidden");
+      } else {
+        opt.classList.add("lang-filtered-hidden");
+        // Deselect if it was selected and is now filtered out
+        if (opt.classList.contains("selected")) {
+          opt.classList.remove("selected");
+          const allOpt = customSelect.querySelector(".custom-select-option[data-value='all']");
+          if (allOpt) {
+            allOpt.classList.add("selected");
+            selectedText.textContent = "Semua media";
+            hiddenInput.value = "all";
+            hiddenInput.dispatchEvent(new Event("change"));
+          }
+        }
+      }
+    });
+    
+    // Update headers visibility too
+    headers.forEach((header) => {
+      const group = header.getAttribute("data-group");
+      if (lang === "all" || (lang === "id" && group === "id") || (lang === "en" && group === "en")) {
+        header.style.display = "";
+      } else {
+        header.style.display = "none";
+      }
+    });
+  };
+
+  if (languageSelect) {
+    languageSelect.addEventListener("change", filterByLanguage);
+  }
+
+  // Filter options on search typing
+  searchInput.addEventListener("input", () => {
+    const filter = searchInput.value.toLowerCase().trim();
+    const lang = languageSelect ? languageSelect.value : "all";
+    let visibleCount = 0;
+    activeIndex = -1;
+    options.forEach((o) => o.classList.remove("hovered"));
+
+    const visibleInGroup = { id: 0, en: 0 };
+
+    options.forEach((opt) => {
+      const val = opt.getAttribute("data-value");
+      if (val === "all") {
+        if (filter === "") {
+          opt.classList.remove("hidden");
+          visibleCount++;
+        } else {
+          opt.classList.add("hidden");
+        }
+        return;
+      }
+
+      // Check if it's already filtered out by language
+      const isLangHidden = opt.classList.contains("lang-filtered-hidden");
+      if (isLangHidden) {
+        opt.classList.add("hidden");
+        return;
+      }
+
+      const text = opt.textContent.toLowerCase();
+      const group = opt.getAttribute("data-group");
+      if (text.includes(filter)) {
+        opt.classList.remove("hidden");
+        visibleCount++;
+        if (group) visibleInGroup[group]++;
+      } else {
+        opt.classList.add("hidden");
+      }
+    });
+
+    // Show/hide group headers based on item visibility
+    headers.forEach((header) => {
+      const group = header.getAttribute("data-group");
+      const isLangMatch = lang === "all" || (lang === "id" && group === "id") || (lang === "en" && group === "en");
+      if (isLangMatch && (filter === "" || (group && visibleInGroup[group] > 0))) {
+        header.style.display = "";
+      } else {
+        header.style.display = "none";
+      }
+    });
+
+    // Show/hide no results text
+    if (visibleCount === 0) {
+      noResults.style.display = "";
+    } else {
+      noResults.style.display = "none";
+    }
+  });
 }
 
 // Tab switcher functionality
@@ -1287,6 +2281,142 @@ function formatRelativeTime(isoString) {
   }
 }
 
+// Filter loaded articles by language & search keyword
+function applyFiltersAndRender() {
+  let filtered = activeFeedArticles;
+  
+  // Apply language filter
+  if (selectedLanguage !== "all") {
+    filtered = activeFeedArticles.filter(article => {
+      const src = availableSources.find(s => s.id === article.source.id);
+      const lang = src ? src.language : "id";
+      return lang === selectedLanguage;
+    });
+  }
+  
+  // Apply search keyword filter
+  const searchVal = feedSearchInput.value.trim().toLowerCase();
+  if (searchVal !== "") {
+    filtered = filtered.filter(article => {
+      const title = (article.title || "").toLowerCase();
+      const desc = (article.description || "").toLowerCase();
+      return title.includes(searchVal) || desc.includes(searchVal);
+    });
+  }
+  
+  renderArticles(filtered);
+  
+  // Show / hide Load More footer based on overall page index
+  if (activeFeedArticles.length < totalResults) {
+    feedFooter.style.display = "flex";
+  } else {
+    feedFooter.style.display = "none";
+  }
+}
+
+// Load More Button Event Handler
+loadMoreBtn.addEventListener("click", async () => {
+  currentPage++;
+  loadMoreBtn.disabled = true;
+  loadMoreBtn.querySelector(".spinner").style.display = "inline";
+  
+  const separator = currentQueryUrl.includes("?") ? "&" : "?";
+  const paginatedPath = currentQueryUrl + separator + "page=" + currentPage;
+  
+  try {
+    const response = await fetch(paginatedPath);
+    const payload = await response.json();
+    
+    if (response.ok && payload.articles) {
+      activeFeedArticles = activeFeedArticles.concat(payload.articles);
+      applyFiltersAndRender();
+    }
+  } catch (error) {
+    console.error("Load more failed", error);
+  } finally {
+    loadMoreBtn.disabled = false;
+    loadMoreBtn.querySelector(".spinner").style.display = "none";
+  }
+});
+
+// Instant search inside the visual feed, and Enter for server-side search
+feedSearchInput.addEventListener("input", applyFiltersAndRender);
+feedSearchInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const val = feedSearchInput.value.trim();
+    if (val !== "") {
+      endpoint.value = "/v2/everything";
+      query.value = val;
+      syncFields();
+      form.dispatchEvent(new Event("submit"));
+    }
+  }
+});
+
+// Language Filter Tags Event Handlers
+langTags.forEach(tag => {
+  tag.addEventListener("click", () => {
+    langTags.forEach(t => t.classList.remove("active"));
+    tag.classList.add("active");
+    selectedLanguage = tag.dataset.lang;
+    applyFiltersAndRender();
+  });
+});
+
+// Render skeletons shimmer loaders during active requests
+function renderSkeletons() {
+  newsFeedGrid.textContent = "";
+  readerEmpty.style.display = "none";
+  newsFeedGrid.style.display = "grid";
+  
+  for (let i = 0; i < 6; i++) {
+    const card = document.createElement("article");
+    card.className = "news-card skeleton";
+    
+    const imgContainer = document.createElement("div");
+    imgContainer.className = "card-img-container skeleton-shimmer";
+    
+    const cardBody = document.createElement("div");
+    cardBody.className = "card-body";
+    
+    const meta = document.createElement("div");
+    meta.className = "card-meta";
+    
+    const badge = document.createElement("span");
+    badge.className = "skeleton-badge skeleton-shimmer";
+    
+    const time = document.createElement("span");
+    time.className = "skeleton-time skeleton-shimmer";
+    
+    meta.appendChild(badge);
+    meta.appendChild(time);
+    
+    const title1 = document.createElement("div");
+    title1.className = "skeleton-title skeleton-shimmer";
+    
+    const title2 = document.createElement("div");
+    title2.className = "skeleton-title-short skeleton-shimmer";
+    
+    const desc1 = document.createElement("div");
+    desc1.className = "skeleton-desc skeleton-shimmer";
+    
+    const desc2 = document.createElement("div");
+    desc2.className = "skeleton-desc-short skeleton-shimmer";
+    
+    cardBody.appendChild(meta);
+    cardBody.appendChild(title1);
+    cardBody.appendChild(title2);
+    cardBody.appendChild(desc1);
+    cardBody.appendChild(desc2);
+    
+    card.appendChild(imgContainer);
+    card.appendChild(cardBody);
+    
+    newsFeedGrid.appendChild(card);
+  }
+}
+
 // Render visual articles cards
 function renderArticles(articles) {
   newsFeedGrid.textContent = "";
@@ -1319,6 +2449,7 @@ function renderArticles(articles) {
       img.src = article.urlToImage;
       img.alt = cleanTitle;
       img.loading = "lazy";
+      img.decoding = "async";
       img.onload = () => {
         imgContainer.classList.remove("loading");
       };
@@ -1380,21 +2511,24 @@ function openReaderModal(article) {
   const sourceName = (article.source && article.source.name) || "Media Indonesia";
   const formattedTime = formatRelativeTime(article.publishedAt);
   const authorText = article.author ? "Oleh: " + article.author : "Redaksi Beritaku";
+  const titleText = escapeHtml(article.title || "Tanpa Judul");
+  const sourceText = escapeHtml(sourceName);
+  const safeUrl = escapeAttribute(article.url || "#");
   
   let contentHtml = "";
   contentHtml += '<div class="reader-article-meta">';
-  contentHtml += '  <span class="reader-article-source">' + sourceName + '</span>';
-  contentHtml += '  <span>' + formattedTime + '</span>';
+  contentHtml += '  <span class="reader-article-source">' + sourceText + '</span>';
+  contentHtml += '  <span>' + escapeHtml(formattedTime) + '</span>';
   contentHtml += '</div>';
-  contentHtml += '<h1 class="reader-article-title">' + article.title + '</h1>';
-  contentHtml += '<div class="reader-article-author">' + authorText + '</div>';
+  contentHtml += '<h1 class="reader-article-title">' + titleText + '</h1>';
+  contentHtml += '<div class="reader-article-author">' + escapeHtml(authorText) + '</div>';
   
   if (article.urlToImage) {
-    contentHtml += '<img class="reader-article-img" src="' + article.urlToImage + '" alt="' + article.title + '" onerror="this.style.display=\\'none\\';" />';
+    contentHtml += '<img class="reader-article-img" src="' + escapeAttribute(article.urlToImage) + '" alt="' + titleText + '" loading="lazy" decoding="async" onerror="this.style.display=\\'none\\';" />';
   }
   
   if (article.description) {
-    contentHtml += '<p class="article-lead">' + article.description + '</p>';
+    contentHtml += '<p class="article-lead">' + escapeHtml(article.description) + '</p>';
   }
   
   if (article.content) {
@@ -1403,7 +2537,7 @@ function openReaderModal(article) {
     if (cleanContent.trim() && cleanContent !== article.description) {
       const paragraphs = cleanContent.split(/\\n+/).filter(p => p.trim());
       paragraphs.forEach(p => {
-        contentHtml += '<p class="article-body-p">' + p + '</p>';
+        contentHtml += '<p class="article-body-p">' + escapeHtml(p) + '</p>';
       });
     }
   } else if (!article.description) {
@@ -1411,8 +2545,8 @@ function openReaderModal(article) {
   }
   
   contentHtml += '<div style="margin-top: 40px; text-align: center;">';
-  contentHtml += '  <a class="original-link-btn" href="' + article.url + '" target="_blank" rel="noopener noreferrer">';
-  contentHtml += '    Baca Selengkapnya di ' + sourceName + ' ↗';
+  contentHtml += '  <a class="original-link-btn" href="' + safeUrl + '" target="_blank" rel="noopener noreferrer">';
+  contentHtml += '    Baca Selengkapnya di ' + sourceText + ' ↗';
   contentHtml += '  </a>';
   contentHtml += '</div>';
   
@@ -1630,23 +2764,50 @@ if (window.speechSynthesis.onvoiceschanged !== undefined) {
 export async function runApiRequest(event) {
   event.preventDefault();
   const path = buildRequestPath();
+  const requestStartedAt = Date.now();
   
-  // Reset audio on fresh requests
+  // Reset audio and pagination on fresh requests
   stopTts();
+  currentPage = 1;
+  currentQueryUrl = path;
+  
+  // Clear feed search text
+  feedSearchInput.value = "";
+  
+  // Sync active language pill with query language
+  const reqLang = languageSelect.value;
+  langTags.forEach(t => t.classList.remove("active"));
+  const matchingTag = document.querySelector(".lang-tag[data-lang='" + reqLang + "']");
+  if (matchingTag) {
+    matchingTag.classList.add("active");
+    selectedLanguage = reqLang;
+  } else {
+    const allTag = document.querySelector(".lang-tag[data-lang='all']");
+    if (allTag) allTag.classList.add("active");
+    selectedLanguage = "all";
+  }
   
   // Check local cache
   const now = Date.now();
   if (apiCache.has(path)) {
     const cached = apiCache.get(path);
     if (now - cached.timestamp < CACHE_TTL_MS) {
-      requestStatus.textContent = "OK 200 (Cached)";
+      setRequestStatus("OK 200 (Cached)");
       responseOutput.textContent = JSON.stringify(cached.payload, null, 2);
+      updateEndpointStats(cached.payload);
+      
       if (cached.payload.articles) {
-        currentArticles = cached.payload.articles;
-        renderArticles(currentArticles);
+        activeFeedArticles = cached.payload.articles;
+        totalResults = cached.payload.totalResults ?? 0;
+        
+        feedHeaderBar.style.display = "flex";
+        applyFiltersAndRender();
         switchTab("reader");
       } else {
-        currentArticles = [];
+        activeFeedArticles = [];
+        totalResults = 0;
+        feedHeaderBar.style.display = "none";
+        feedFooter.style.display = "none";
         renderArticles([]);
         switchTab("json");
       }
@@ -1654,20 +2815,34 @@ export async function runApiRequest(event) {
     }
   }
 
-  requestStatus.textContent = "Loading";
+  if (activeRequestController) {
+    activeRequestController.abort();
+  }
+
+  const requestController = new AbortController();
+  activeRequestController = requestController;
+  setRequestStatus("Loading");
   responseOutput.textContent = "Mengambil data...";
   
-  // Show visual loader in reader feed
-  newsFeedGrid.style.display = "none";
-  readerEmpty.style.display = "flex";
-  readerEmpty.querySelector("h3").textContent = "Memuat Berita...";
-  readerEmpty.querySelector("p").textContent = "Sedang mengambil dan mengagregasi data dari media Indonesia...";
+  // Show visual loader skeletons in reader feed
+  renderSkeletons();
+  feedHeaderBar.style.display = "none";
+  feedFooter.style.display = "none";
+  switchTab("reader");
 
   try {
-    const response = await fetch(path);
+    const response = await fetch(path, {
+      signal: requestController.signal,
+    });
     const payload = await response.json();
-    requestStatus.textContent = response.ok ? "OK " + response.status : "Error " + response.status;
+    const elapsedMs = Date.now() - requestStartedAt;
+    setRequestStatus(
+      response.ok
+        ? "OK " + response.status + " · " + elapsedMs + "ms"
+        : "Error " + response.status,
+    );
     responseOutput.textContent = JSON.stringify(payload, null, 2);
+    updateEndpointStats(payload);
     
     if (response.ok) {
       // Store in cache
@@ -1677,25 +2852,45 @@ export async function runApiRequest(event) {
       });
       
       if (payload.articles) {
-        currentArticles = payload.articles;
-        renderArticles(currentArticles);
+        activeFeedArticles = payload.articles;
+        totalResults = payload.totalResults ?? 0;
+        
+        feedHeaderBar.style.display = "flex";
+        applyFiltersAndRender();
         switchTab("reader");
       } else {
-        currentArticles = [];
+        activeFeedArticles = [];
+        totalResults = 0;
+        feedHeaderBar.style.display = "none";
+        feedFooter.style.display = "none";
         renderArticles([]);
         switchTab("json");
       }
     } else {
-      currentArticles = [];
+      activeFeedArticles = [];
+      totalResults = 0;
+      feedHeaderBar.style.display = "none";
+      feedFooter.style.display = "none";
       renderArticles([]);
       switchTab("json");
     }
   } catch (error) {
-    requestStatus.textContent = "Network error";
+    if (requestController.signal.aborted) {
+      return;
+    }
+
+    setRequestStatus("Network error");
     responseOutput.textContent = error instanceof Error ? error.message : String(error);
-    currentArticles = [];
+    activeFeedArticles = [];
+    totalResults = 0;
+    feedHeaderBar.style.display = "none";
+    feedFooter.style.display = "none";
     renderArticles([]);
     switchTab("json");
+  } finally {
+    if (activeRequestController === requestController) {
+      activeRequestController = null;
+    }
   }
 }
 
@@ -1704,14 +2899,22 @@ endpoint.addEventListener("change", syncFields);
 category.addEventListener("change", syncRequestUrl);
 query.addEventListener("input", syncRequestUrl);
 sourcesInput.addEventListener("change", syncRequestUrl);
+languageSelect.addEventListener("change", syncRequestUrl);
 pageSize.addEventListener("input", syncRequestUrl);
+quickPresets.addEventListener("click", (event) => {
+  const button = event.target.closest(".preset-chip");
+  if (button) {
+    applyPreset(button.dataset.preset);
+  }
+});
 
 copyUrl.addEventListener("click", async () => {
   const absoluteUrl = new URL(buildRequestPath(), window.location.origin).toString();
   await navigator.clipboard.writeText(absoluteUrl);
-  requestStatus.textContent = "URL copied";
+  setRequestStatus("URL copied");
 });
 
+updateEndpointStats();
 syncFields();
 void loadSources();
 

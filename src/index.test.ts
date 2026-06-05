@@ -130,6 +130,32 @@ describe("News API Indonesia", () => {
     expect(js).toContain("loadSources");
   });
 
+  test("serves responsive frontend enhancements for the API console", async () => {
+    const app = createTestApp();
+    const pageResponse = await app.request("/");
+    const cssResponse = await app.request("/assets/app.css");
+    const jsResponse = await app.request("/assets/app.js");
+
+    const html = await pageResponse.text();
+    const css = await cssResponse.text();
+    const js = await jsResponse.text();
+
+    expect(html).toContain("quick-presets");
+    expect(html).toContain("endpoint-stats");
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain("Breaking nasional");
+
+    expect(css).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
+    expect(css).toContain("@media (max-width: 520px)");
+    expect(css).toContain("content-visibility: auto");
+    expect(css).toContain("prefers-reduced-motion: reduce");
+
+    expect(js).toContain("applyPreset");
+    expect(js).toContain("AbortController");
+    expect(js).toContain('img.decoding = "async"');
+    expect(js).toContain("updateEndpointStats");
+  });
+
   test("returns NewsAPI-like top headlines for Indonesia RSS sources", async () => {
     const app = createTestApp();
     const response = await app.request(

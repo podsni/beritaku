@@ -8,6 +8,7 @@ import type {
   FetchText,
   NewsArticle,
   NewsArticleStore,
+  NewsLanguage,
   NewsSource,
   PublicNewsSource,
   TopHeadlinesQuery,
@@ -46,7 +47,10 @@ export class NewsService {
   }
 
   async searchEverything(query: EverythingQuery): Promise<NewsSearchResult> {
-    const sources = this.resolveEverythingSources(query.sources);
+    const sources = this.resolveEverythingSources(
+      query.sources,
+      query.language,
+    );
     const articles = await this.fetchArticles(sources);
     const filtered = articles.filter((article) =>
       matchesEverythingQuery(article, query),
@@ -61,14 +65,18 @@ export class NewsService {
 
   private resolveEverythingSources(
     sourceIds: readonly string[] | undefined,
+    language?: NewsLanguage,
   ): readonly NewsSource[] {
-    if (sourceIds === undefined || sourceIds.length === 0) {
-      return this.options.sources;
+    let sources = this.options.sources;
+    if (language !== undefined) {
+      sources = sources.filter((source) => source.language === language);
     }
 
-    const sourcesById = new Map(
-      this.options.sources.map((source) => [source.id, source]),
-    );
+    if (sourceIds === undefined || sourceIds.length === 0) {
+      return sources;
+    }
+
+    const sourcesById = new Map(sources.map((source) => [source.id, source]));
     return sourceIds.map((sourceId) => {
       const source = sourcesById.get(sourceId);
       if (source === undefined) {
@@ -87,6 +95,10 @@ export class NewsService {
 
     const sources = this.options.sources.filter((source) => {
       if (source.country !== query.country) {
+        return false;
+      }
+
+      if (query.language !== undefined && source.language !== query.language) {
         return false;
       }
 
@@ -158,7 +170,7 @@ export class NewsService {
           : this.rssAdapter.parse(feedText, source);
 
       if (articles.length > 0) {
-        return articles;
+        return await this.enrichArticlesFromCache(source, articles);
       }
     } catch (error) {
       const cachedArticles = await this.readStoredArticles(source);
@@ -170,6 +182,63 @@ export class NewsService {
     }
 
     return this.readStoredArticles(source);
+  }
+
+  private async enrichArticlesFromCache(
+    source: NewsSource,
+    articles: readonly NewsArticle[],
+  ): Promise<readonly NewsArticle[]> {
+    const isTest = process.env.NODE_ENV === "test";
+    const applyFallback = (art: NewsArticle) => {
+      if (isTest) return art;
+      return {
+        ...art,
+        urlToImage:
+          art.urlToImage ||
+          `https://tse1.mm.bing.net/th?q=${encodeURIComponent(art.title)}`,
+      };
+    };
+
+    if (this.options.articleStore === undefined) {
+      return articles.map(applyFallback);
+    }
+
+    try {
+      const cached = await this.options.articleStore.readArticles(source);
+      if (cached.length === 0) {
+        return articles.map(applyFallback);
+      }
+
+      const cachedByTitle = new Map<string, NewsArticle>();
+      for (const article of cached) {
+        cachedByTitle.set(article.title, article);
+      }
+
+      return articles.map((article) => {
+        const cachedArticle = cachedByTitle.get(article.title);
+        let url = article.url;
+        let urlToImage = article.urlToImage;
+
+        if (cachedArticle !== undefined) {
+          const originalUrl = article.url;
+          url = cachedArticle.url.includes("news.google.com")
+            ? originalUrl
+            : cachedArticle.url;
+          urlToImage = article.urlToImage ?? cachedArticle.urlToImage;
+        }
+
+        return {
+          ...article,
+          url,
+          urlToImage: isTest
+            ? urlToImage
+            : urlToImage ||
+              `https://tse1.mm.bing.net/th?q=${encodeURIComponent(article.title)}`,
+        };
+      });
+    } catch {
+      return articles.map(applyFallback);
+    }
   }
 
   private async readStoredArticles(

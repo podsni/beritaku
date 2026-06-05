@@ -5,6 +5,7 @@ import {
   type EverythingQuery,
   type NewsCategory,
   type NewsCategoryFilter,
+  type NewsLanguage,
   type TopHeadlinesQuery,
 } from "./types";
 
@@ -18,11 +19,13 @@ export function parseTopHeadlinesQuery(
   const category = parseCategory(query.category ?? "general");
   const sources = parseSources(query.sources);
   const pagination = parsePagination(query);
+  const language = parseLanguage(query.language);
 
   return {
     country: "id",
     category,
     sources,
+    language,
     ...pagination,
   };
 }
@@ -32,6 +35,7 @@ export function parseEverythingQuery(
 ): EverythingQuery {
   const pagination = parsePagination(query);
   const sources = parseSources(query.sources);
+  const language = parseLanguage(query.language);
 
   if (query.sortBy !== undefined && query.sortBy !== "publishedAt") {
     throw badRequest("parameterInvalid", "sortBy must be publishedAt");
@@ -43,6 +47,7 @@ export function parseEverythingQuery(
     from: parseOptionalDate(query.from, "from"),
     to: parseOptionalDate(query.to, "to"),
     sortBy: "publishedAt",
+    language,
     ...pagination,
   };
 }
@@ -108,4 +113,17 @@ function normalizeOptionalString(
 
   const normalized = value.trim();
   return normalized.length > 0 ? normalized : undefined;
+}
+
+function parseLanguage(value: string | undefined): NewsLanguage | undefined {
+  const normalized = normalizeOptionalString(value);
+  if (normalized === undefined || normalized === "all") {
+    return undefined;
+  }
+
+  if (normalized === "id" || normalized === "en") {
+    return normalized;
+  }
+
+  throw badRequest("parameterInvalid", "language must be one of: all, id, en");
 }
