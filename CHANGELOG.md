@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Quick Presets**: Interactive chips for rapid API parameter configuration.
   - **Performance Dashboard**: Real-time stats visualization for API endpoints in the console.
 - **Advanced News Decoding**: Integrated `google-news-url-decoder` and `cloakbrowser` for resilient article link resolution and fetching.
+- **Advanced News Portal Features**:
+  - **Reading Time Estimation**: Automatic calculation of estimated reading time for all articles.
+  - **Article Bookmarking**: Complete system to save/bookmark favorite articles locally with a dedicated "Tersimpan" filter view.
+  - **Social Sharing**: One-click functionality to copy article links to the clipboard for easy sharing.
+  - **Infinite Pagination**: "Load More" capability for the news portal to explore more articles without refreshing.
+  - **Interactive Feedback**: Integrated animated toast notification system for user actions like saving or sharing.
 - **Advanced UI Refinements**:
   - **Editorial Design**: Re-designed the API explorer with a refined editorial aesthetic, including a grain overlay and high-contrast typography.
   - **Sidebar Rail**: New sticky navigation sidebar for switching between API endpoints and views.

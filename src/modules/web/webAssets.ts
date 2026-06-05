@@ -2053,6 +2053,49 @@ h2 {
     scroll-behavior: auto !important;
   }
 }
+
+/* Bookmarks active toggle state */
+.bookmark-btn.active {
+  background: var(--tomato) !important;
+  color: #ffffff !important;
+  border-color: var(--tomato) !important;
+}
+
+.bookmark-btn.active .bookmark-icon {
+  fill: currentColor !important;
+}
+
+/* Toast popup notification */
+.toast-notification {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--charcoal);
+  color: #f4f0df;
+  padding: 12px 24px;
+  border-radius: 30px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  z-index: 9999;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.toast-notification.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* Portal load-more button centering */
+.portal-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+  margin-bottom: 32px;
+}
 `;
 
 export const appJs = `
@@ -2769,11 +2812,12 @@ function openReaderModal(article) {
   const titleText = escapeHtml(article.title || "Tanpa Judul");
   const sourceText = escapeHtml(sourceName);
   const safeUrl = escapeAttribute(article.url || "#");
+  const readTimeStr = calculateReadingTime(article);
   
   let contentHtml = "";
   contentHtml += '<div class="reader-article-meta">';
   contentHtml += '  <span class="reader-article-source">' + sourceText + '</span>';
-  contentHtml += '  <span>' + escapeHtml(formattedTime) + '</span>';
+  contentHtml += '  <span>' + escapeHtml(formattedTime) + ' · ' + escapeHtml(readTimeStr) + '</span>';
   contentHtml += '</div>';
   contentHtml += '<h1 class="reader-article-title">' + titleText + '</h1>';
   contentHtml += '<div class="reader-article-author">' + escapeHtml(authorText) + '</div>';
@@ -2819,6 +2863,9 @@ function openReaderModal(article) {
   // Open modal
   readerModal.setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
+  
+  // Update Bookmark status inside Reader UI
+  updateBookmarkUI();
   
   // Reset scroll
   scrollArea.scrollTop = 0;
@@ -3148,8 +3195,120 @@ window.addEventListener("beforeunload", () => {
 
 // ================== NEWS PORTAL CONTROLLER LOGIC ==================
 let portalArticles = [];
+let currentPortalCategory = 'all';
+let currentPortalQuery = '';
+let portalPage = 1;
 
-async function loadPortalNews(cat = 'all', q = '') {
+// Element selectors for portal controls
+const portalLoadMoreBtn = document.querySelector("#portal-load-more-btn");
+const portalFooterWrap = document.querySelector("#portal-footer-wrap");
+const shareBtn = document.querySelector("#reader-share-btn");
+const bookmarkBtn = document.querySelector("#reader-bookmark-toggle");
+const bookmarkBtnText = document.querySelector("#bookmark-btn-text");
+const portalBookmarkFilter = document.querySelector("#portal-bookmark-filter");
+const toastNotification = document.querySelector("#toast-notification");
+
+// Estimate reading time at 200 words per minute
+function calculateReadingTime(article) {
+  const text = (article.title ?? "") + " " + (article.description ?? "") + " " + (article.content ?? "");
+  const wordCount = text.split(/s+/).filter(w => w).length;
+  const mins = Math.max(1, Math.ceil(wordCount / 200));
+  return mins + " mnt baca";
+}
+
+// Show animated toast popup
+function showToast(message) {
+  if (!toastNotification) return;
+  toastNotification.textContent = message;
+  toastNotification.classList.add("show");
+  setTimeout(() => {
+    toastNotification.classList.remove("show");
+  }, 2500);
+}
+
+// Bookmark storage helpers
+function getBookmarks() {
+  const saved = localStorage.getItem("beritaku-bookmarks");
+  return saved ? JSON.parse(saved) : [];
+}
+
+function saveBookmarks(bookmarks) {
+  localStorage.setItem("beritaku-bookmarks", JSON.stringify(bookmarks));
+}
+
+function isBookmarked(article) {
+  if (!article) return false;
+  const bookmarks = getBookmarks();
+  return bookmarks.some(b => b.url === article.url);
+}
+
+function updateBookmarkUI() {
+  if (!activeArticle || !bookmarkBtn) return;
+  const active = isBookmarked(activeArticle);
+  bookmarkBtn.classList.toggle("active", active);
+  if (bookmarkBtnText) {
+    bookmarkBtnText.textContent = active ? "Tersimpan" : "Simpan";
+  }
+}
+
+// Bookmark reader button click handler
+if (bookmarkBtn) {
+  bookmarkBtn.addEventListener("click", () => {
+    if (!activeArticle) return;
+    let bookmarks = getBookmarks();
+    const active = isBookmarked(activeArticle);
+    
+    if (active) {
+      bookmarks = bookmarks.filter(b => b.url !== activeArticle.url);
+      showToast("Berita dihapus dari penanda.");
+    } else {
+      bookmarks.push(activeArticle);
+      showToast("Berita disimpan ke penanda!");
+    }
+    
+    saveBookmarks(bookmarks);
+    updateBookmarkUI();
+
+    // If currently viewing bookmarks category, reload portal news view
+    if (currentPortalCategory === "bookmark") {
+      void loadPortalNews("bookmark", null);
+    }
+  });
+}
+
+// Share button click handler
+if (shareBtn) {
+  shareBtn.addEventListener("click", async () => {
+    if (!activeArticle) return;
+    try {
+      await navigator.clipboard.writeText(activeArticle.url || window.location.href);
+      showToast("Tautan berita disalin ke papan klip!");
+    } catch (err) {
+      console.error("Gagal menyalin tautan:", err);
+      showToast("Gagal menyalin tautan.");
+    }
+  });
+}
+
+// Bookmark filter pill toggle
+if (portalBookmarkFilter) {
+  portalBookmarkFilter.addEventListener("click", () => {
+    document.querySelectorAll(".portal-cat-btn").forEach(b => b.classList.remove("active"));
+    portalBookmarkFilter.classList.add("active");
+    if (portalSearchQ) portalSearchQ.value = "";
+    void loadPortalNews("bookmark", null);
+  });
+}
+
+// Load Portal News from API or Bookmarks
+async function loadPortalNews(cat = 'all', q = '', isAppend = false) {
+  if (!isAppend) {
+    portalPage = 1;
+  }
+  
+  currentPortalCategory = cat;
+  currentPortalQuery = q;
+
   const portalSkeletons = document.querySelector("#portal-skeletons");
   const portalNewsGrid = document.querySelector("#portal-news-grid");
   const portalFeatured = document.querySelector("#portal-featured-story");
@@ -3157,30 +3316,39 @@ async function loadPortalNews(cat = 'all', q = '') {
   const tickerItems = document.querySelector("#portal-ticker-items");
 
   // Show skeletons
-  if (portalSkeletons) portalSkeletons.style.display = "grid";
-  if (portalNewsGrid) portalNewsGrid.style.display = "none";
-  if (portalFeatured) portalFeatured.style.display = "none";
-  if (portalEmpty) portalEmpty.style.display = "none";
+  if (!isAppend) {
+    if (portalSkeletons) portalSkeletons.style.display = "grid";
+    if (portalNewsGrid) portalNewsGrid.style.display = "none";
+    if (portalFeatured) portalFeatured.style.display = "none";
+    if (portalEmpty) portalEmpty.style.display = "none";
+    if (portalFooterWrap) portalFooterWrap.style.display = "none";
+  }
 
   try {
-    let url = "/v2/top-headlines?country=id&pageSize=30";
-    if (cat && cat !== "all") {
-      url += "&category=" + cat;
+    let data;
+    if (cat === "bookmark") {
+      const saved = localStorage.getItem("beritaku-bookmarks");
+      const bookmarks = saved ? JSON.parse(saved) : [];
+      data = { status: "ok", articles: bookmarks };
+    } else {
+      let url = "/v2/top-headlines?country=id&pageSize=60";
+      if (cat && cat !== "all") {
+        url += "&category=" + cat;
+      }
+      if (q && q.trim() !== "") {
+        url = "/v2/everything?q=" + encodeURIComponent(q.trim()) + "&pageSize=60";
+      }
+      const response = await fetch(url);
+      data = await response.json();
     }
-    if (q && q.trim() !== "") {
-      url = "/v2/everything?q=" + encodeURIComponent(q.trim()) + "&pageSize=30";
-    }
-
-    const response = await fetch(url);
-    const data = await response.json();
     
     if (portalSkeletons) portalSkeletons.style.display = "none";
 
     if (data.articles && data.articles.length > 0) {
       portalArticles = data.articles;
       
-      // Populate breaking marquee ticker (first 8 headlines)
-      if (tickerItems) {
+      // Populate breaking marquee ticker (first 8 headlines) on fresh load
+      if (!isAppend && tickerItems && cat !== "bookmark") {
         tickerItems.innerHTML = "";
         const tickerArticles = portalArticles.slice(0, 8);
         tickerArticles.forEach(art => {
@@ -3192,21 +3360,21 @@ async function loadPortalNews(cat = 'all', q = '') {
         });
       }
 
-      // Render lead story (index 0)
-      const featured = portalArticles[0];
-      if (portalFeatured && featured) {
-        renderPortalFeatured(featured);
-        portalFeatured.style.display = "grid";
-      }
-
-      // Render other stories in grid
-      const gridArticles = portalArticles.slice(1);
-      if (portalNewsGrid) {
-        renderPortalGrid(gridArticles);
-        portalNewsGrid.style.display = "grid";
-      }
+      renderPortalView();
     } else {
-      if (portalEmpty) portalEmpty.style.display = "flex";
+      if (portalFeatured) portalFeatured.style.display = "none";
+      if (portalNewsGrid) portalNewsGrid.style.display = "none";
+      if (portalFooterWrap) portalFooterWrap.style.display = "none";
+      if (portalEmpty) {
+        portalEmpty.style.display = "flex";
+        if (cat === "bookmark") {
+          portalEmpty.querySelector("h3").textContent = "Belum Ada Berita Tersimpan";
+          portalEmpty.querySelector("p").textContent = "Klik tombol bintang ⭐ 'Simpan' di pojok kanan atas artikel pembaca untuk menyimpan berita ke halaman ini.";
+        } else {
+          portalEmpty.querySelector("h3").textContent = "Artikel Berita Tidak Ditemukan";
+          portalEmpty.querySelector("p").textContent = "Silakan gunakan kata kunci pencarian lain atau ganti kategori media.";
+        }
+      }
     }
   } catch (err) {
     console.error("Error loading news portal:", err);
@@ -3219,6 +3387,45 @@ async function loadPortalNews(cat = 'all', q = '') {
   }
 }
 
+// Slice articles array according to active page and render
+function renderPortalView() {
+  const portalNewsGrid = document.querySelector("#portal-news-grid");
+  const portalFeatured = document.querySelector("#portal-featured-story");
+  const portalEmpty = document.querySelector("#portal-empty");
+
+  if (portalEmpty) portalEmpty.style.display = "none";
+
+  // Feature story is always article index 0
+  const featured = portalArticles[0];
+  if (featured) {
+    renderPortalFeatured(featured);
+    portalFeatured.style.display = "grid";
+  } else {
+    portalFeatured.style.display = "none";
+  }
+
+  // Grid displays remaining items. Initial page 1 shows 6 items.
+  const gridLimit = portalPage * 6;
+  const gridArticles = portalArticles.slice(1, gridLimit + 1);
+
+  if (gridArticles.length > 0) {
+    renderPortalGrid(gridArticles);
+    portalNewsGrid.style.display = "grid";
+  } else {
+    portalNewsGrid.style.display = "none";
+  }
+
+  // Show load more button if there are more items to paginate
+  if (portalFooterWrap) {
+    if (portalArticles.length > gridLimit + 1) {
+      portalFooterWrap.style.display = "flex";
+    } else {
+      portalFooterWrap.style.display = "none";
+    }
+  }
+}
+
+// Render Featured headline card
 function renderPortalFeatured(article) {
   const portalFeatured = document.querySelector("#portal-featured-story");
   if (!portalFeatured) return;
@@ -3226,6 +3433,7 @@ function renderPortalFeatured(article) {
   const sourceName = (article.source && article.source.name) || "Media";
   const cleanTitle = article.title || "Tanpa Judul";
   const timeStr = formatRelativeTime(article.publishedAt);
+  const readTimeStr = calculateReadingTime(article);
   const descText = article.description || "Klik untuk membaca selengkapnya.";
   const imgUrl = article.urlToImage;
 
@@ -3244,7 +3452,7 @@ function renderPortalFeatured(article) {
     '<div class="featured-content">' +
     '  <div class="featured-meta">' +
     '    <span class="featured-badge">' + escapeHtml(sourceName) + '</span>' +
-    '    <span class="featured-time">' + escapeHtml(timeStr) + '</span>' +
+    '    <span class="featured-time">' + escapeHtml(timeStr) + ' · ' + escapeHtml(readTimeStr) + '</span>' +
     '  </div>' +
     '  <h2 class="featured-title">' + escapeHtml(cleanTitle) + '</h2>' +
     '  <p class="featured-desc">' + escapeHtml(descText) + '</p>' +
@@ -3254,6 +3462,7 @@ function renderPortalFeatured(article) {
   portalFeatured.onclick = () => openReaderModal(article);
 }
 
+// Render Standard article grid card list
 function renderPortalGrid(articles) {
   const portalNewsGrid = document.querySelector("#portal-news-grid");
   if (!portalNewsGrid) return;
@@ -3266,6 +3475,7 @@ function renderPortalGrid(articles) {
     const sourceName = (article.source && article.source.name) || "Media";
     const cleanTitle = article.title || "Tanpa Judul";
     const timeStr = formatRelativeTime(article.publishedAt);
+    const readTimeStr = calculateReadingTime(article);
     const imgUrl = article.urlToImage;
     const descText = article.description || "Klik untuk membaca berita selengkapnya.";
 
@@ -3284,7 +3494,7 @@ function renderPortalGrid(articles) {
       '<div class="card-body">' +
       '  <div class="card-meta">' +
       '    <span class="card-badge">' + escapeHtml(sourceName) + '</span>' +
-      '    <span class="card-time">' + escapeHtml(timeStr) + '</span>' +
+      '    <span class="card-time">' + escapeHtml(timeStr) + ' · ' + escapeHtml(readTimeStr) + '</span>' +
       '  </div>' +
       '  <h3 class="card-title">' + escapeHtml(cleanTitle) + '</h3>' +
       '  <p class="card-desc">' + escapeHtml(descText) + '</p>' +
@@ -3295,6 +3505,7 @@ function renderPortalGrid(articles) {
   });
 }
 
+// Render Shimmer Skeletons
 function renderPortalSkeletons() {
   const portalSkeletons = document.querySelector("#portal-skeletons");
   if (!portalSkeletons) return;
@@ -3319,7 +3530,7 @@ function renderPortalSkeletons() {
   }
 }
 
-// Portal Search actions
+// Portal search input listeners
 const portalSearchQ = document.querySelector("#portal-search-q");
 const portalSearchGo = document.querySelector("#portal-search-go");
 
@@ -3327,19 +3538,37 @@ if (portalSearchGo && portalSearchQ) {
   portalSearchGo.addEventListener("click", () => {
     const queryVal = portalSearchQ.value;
     document.querySelectorAll(".portal-cat-btn").forEach(btn => btn.classList.remove("active"));
-    void loadPortalNews(null, queryVal);
+    void loadPortalNews("all", queryVal);
   });
   portalSearchQ.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       const queryVal = portalSearchQ.value;
       document.querySelectorAll(".portal-cat-btn").forEach(btn => btn.classList.remove("active"));
-      void loadPortalNews(null, queryVal);
+      void loadPortalNews("all", queryVal);
     }
+  });
+}
+
+// Portal Load More button click handler
+if (portalLoadMoreBtn) {
+  portalLoadMoreBtn.addEventListener("click", () => {
+    const spinner = portalLoadMoreBtn.querySelector(".spinner");
+    const btnTxt = portalLoadMoreBtn.querySelector("span");
+    if (spinner) spinner.style.display = "inline-block";
+    if (btnTxt) btnTxt.textContent = "Memuat...";
+
+    setTimeout(() => {
+      portalPage += 1;
+      renderPortalView();
+      if (spinner) spinner.style.display = "none";
+      if (btnTxt) btnTxt.textContent = "Muat Lebih Banyak Berita";
+    }, 300);
   });
 }
 
 // Category Pills click handlers
 document.querySelectorAll(".portal-cat-btn").forEach(btn => {
+  if (btn.id === "portal-bookmark-filter") return;
   btn.addEventListener("click", () => {
     document.querySelectorAll(".portal-cat-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
@@ -3354,11 +3583,9 @@ document.querySelectorAll(".code-tab-btn").forEach(btn => {
     const lang = btn.dataset.lang;
     const parent = btn.closest(".docs-section-card");
     
-    // Toggle active state on buttons
     parent.querySelectorAll(".code-tab-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     
-    // Toggle active state on code view blocks
     parent.querySelectorAll(".code-tab-content").forEach(c => {
       c.style.display = c.dataset.lang === lang ? "block" : "none";
     });

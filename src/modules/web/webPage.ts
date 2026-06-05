@@ -98,6 +98,9 @@ export function renderHomePage(): string {
               <button class="portal-cat-btn" data-category="business" type="button">Bisnis</button>
               <button class="portal-cat-btn" data-category="sports" type="button">Olahraga</button>
               <button class="portal-cat-btn" data-category="entertainment" type="button">Hiburan</button>
+              <button class="portal-cat-btn bookmark-filter-btn" id="portal-bookmark-filter" type="button" style="border-color: var(--tomato); color: var(--tomato);">
+                <span>⭐ Tersimpan</span>
+              </button>
             </div>
             <div class="portal-search">
               <input type="text" id="portal-search-q" placeholder="Cari berita di portal..." />
@@ -113,6 +116,14 @@ export function renderHomePage(): string {
           <!-- Portal Card Grid -->
           <div id="portal-news-grid" class="portal-news-grid" style="display: none;">
             <!-- Rendered dynamically via JavaScript -->
+          </div>
+
+          <!-- Portal Load More -->
+          <div class="portal-footer" id="portal-footer-wrap" style="display: none;">
+            <button class="load-more-btn" id="portal-load-more-btn" type="button">
+              <span>Muat Lebih Banyak Berita</span>
+              <svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+            </button>
           </div>
 
           <!-- Skeletons for Loading State -->
@@ -621,6 +632,18 @@ export function renderHomePage(): string {
           </div>
           
           <div class="reader-ctrl-right">
+            <!-- Share Article -->
+            <button class="ctrl-btn share-btn" id="reader-share-btn" title="Bagikan Artikel">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+              <span>Bagikan</span>
+            </button>
+
+            <!-- Bookmark Toggle -->
+            <button class="ctrl-btn bookmark-btn" id="reader-bookmark-toggle" title="Simpan Artikel">
+              <svg class="bookmark-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+              <span id="bookmark-btn-text">Simpan</span>
+            </button>
+
             <!-- Audio Listener (TTS) -->
             <div class="tts-group">
               <button class="ctrl-btn tts-btn" id="tts-play" title="Dengarkan artikel">
@@ -663,6 +686,9 @@ export function renderHomePage(): string {
         </div>
       </div>
     </div>
+
+    <!-- Toast Notification Popup -->
+    <div id="toast-notification" class="toast-notification">Tautan disalin!</div>
   </body>
 </html>`;
 }
