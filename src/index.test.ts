@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { createApp } from "./app";
 import { CsvArticleStore } from "./modules/news/csvArticleStore";
 import { defaultNewsSources } from "./modules/news/sourceRegistry";
+import { RssAdapter } from "./modules/news/rssAdapter";
+import { fetchNewsText } from "./shared/http/fetchNewsText";
 
 const indonesiaRssFixture = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
@@ -532,6 +534,58 @@ describe("News API Indonesia", () => {
     }
   });
 
+  test("uses optional CloakBrowser fallback when direct source fetch is blocked", async () => {
+    let browserLaunches = 0;
+    let browserClosed = false;
+
+    const text = await fetchNewsText("https://blocked.example/feed.xml", {
+      browserLaunch: async () => {
+        browserLaunches += 1;
+        return {
+          close: async () => {
+            browserClosed = true;
+          },
+          newPage: async () => ({
+            content: async () => "<rss><channel></channel></rss>",
+            goto: async (url) => {
+              expect(url).toBe("https://blocked.example/feed.xml");
+            },
+          }),
+        };
+      },
+      enableBrowserFallback: true,
+      fetchImpl: async () =>
+        new Response("blocked", {
+          status: 403,
+          statusText: "Forbidden",
+        }),
+    });
+
+    expect(text).toBe("<rss><channel></channel></rss>");
+    expect(browserLaunches).toBe(1);
+    expect(browserClosed).toBe(true);
+  });
+
+  test("uses CloakBrowser fallback for Cloudflare-style blocked responses", async () => {
+    const text = await fetchNewsText("https://cloudflare.example/feed.xml", {
+      browserLaunch: async () => ({
+        close: async () => {},
+        newPage: async () => ({
+          content: async () =>
+            "<rss><channel><title>Browser</title></channel></rss>",
+          goto: async () => {},
+        }),
+      }),
+      enableBrowserFallback: true,
+      fetchImpl: async () =>
+        new Response("origin unavailable", {
+          status: 530,
+        }),
+    });
+
+    expect(text).toContain("<title>Browser</title>");
+  });
+
   test("keeps a parsed CSV source index for repeated store reads", async () => {
     const directory = await mkdtemp(join(tmpdir(), "beritaku-news-"));
     const csvPath = join(directory, "news-cache.csv");
@@ -784,6 +838,86 @@ describe("News API Indonesia", () => {
       expect(source?.category).toBe("technology");
       expect(source?.language).toBe("en");
     }
+  });
+
+  test("default registry includes requested international, local, football, and crypto media", () => {
+    const sourceIds = new Set(defaultNewsSources.map((source) => source.id));
+
+    for (const requiredSource of [
+      "wired-general",
+      "wired-business",
+      "wired-sports",
+      "wired-technology",
+      "wired-entertainment",
+      "historytoday-general",
+      "kompas-id-general",
+      "cnbc-world-business",
+      "malang-post-general",
+      "suara-surabaya-general",
+      "jatim-times-general",
+      "dw-general",
+      "the-diplomat-general",
+      "bloomberg-asia-business",
+      "wsj-business",
+      "rt-general",
+      "goodnewsfromindonesia-general",
+      "aljazeera-general",
+      "forbes-business",
+      "jawapos-general",
+      "nature-technology",
+      "war-on-the-rocks-general",
+      "economist-business",
+      "goal-indonesia-sports",
+      "athletic-football-sports",
+      "coaches-voice-sports",
+      "goal-global-sports",
+      "cryptowave-business",
+      "bloomberg-crypto-business",
+      "nbcnews-general",
+    ]) {
+      expect(sourceIds.has(requiredSource)).toBe(true);
+    }
+
+    expect(
+      defaultNewsSources.filter((source) => source.id.startsWith("wired-")),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ category: "general" }),
+        expect.objectContaining({ category: "business" }),
+        expect.objectContaining({ category: "sports" }),
+        expect.objectContaining({ category: "technology" }),
+        expect.objectContaining({ category: "entertainment" }),
+      ]),
+    );
+  });
+
+  test("RSS adapter parses dc:date timestamps used by developer blog feeds", () => {
+    const adapter = new RssAdapter();
+    const articles = adapter.parse(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <item>
+      <title>Developer post</title>
+      <link>https://xeiaso.net/blog/example</link>
+      <description>Example developer article</description>
+      <dc:date>2026-06-04T13:45:00Z</dc:date>
+    </item>
+  </channel>
+</rss>`,
+      {
+        id: "blog-xeiaso-net",
+        name: "xeiaso.net",
+        description: "Developer blog feed for xeiaso.net",
+        url: "https://xeiaso.net",
+        rssUrl: "https://xeiaso.net/blog.rss",
+        category: "technology",
+        language: "en",
+        country: "id",
+      },
+    );
+
+    expect(articles[0]?.publishedAt).toBe("2026-06-04T13:45:00.000Z");
   });
 
   test("SqliteArticleStore writes and reads articles correctly", async () => {

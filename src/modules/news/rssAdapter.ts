@@ -61,7 +61,11 @@ export class RssAdapter {
       publishedAt: parseDate(
         getText(item.pubDate) ??
           getText(item.published) ??
-          getText(item.updated),
+          getText(item.updated) ??
+          getText(item["dc:date"]) ??
+          getText(item.date) ??
+          getText(item["atom:published"]) ??
+          getText(item["atom:updated"]),
       ),
       content,
     };
@@ -116,7 +120,9 @@ export class RssAdapter {
       publishedAt: parseDate(
         getText(entry.published) ??
           getText(entry.updated) ??
-          getText(entry.issued),
+          getText(entry.issued) ??
+          getText(entry["dc:date"]) ??
+          getText(entry.date),
       ),
       content: content ?? summary ?? "",
     };

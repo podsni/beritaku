@@ -6,6 +6,7 @@ import { SqliteArticleStore } from "../modules/news/sqliteArticleStore";
 import { NewsService } from "../modules/news/newsService";
 import { defaultNewsSources } from "../modules/news/sourceRegistry";
 import type { NewsArticle, NewsSource } from "../modules/news/types";
+import { fetchNewsText } from "../shared/http/fetchNewsText";
 
 const csvPath = Bun.env.NEWS_CSV_PATH ?? "data/news-cache.csv";
 const sqlitePath = Bun.env.NEWS_SQLITE_PATH ?? "data/news-cache.sqlite";
@@ -20,19 +21,6 @@ const newsService = new NewsService({
   articleStore: csvStore,
   onSourceError: logSourceError,
 });
-
-// Sequential queue lock for CloakBrowser to prevent launching multiple Chromium instances in parallel
-let cloakBrowserMutex = Promise.resolve();
-
-function acquireMutex(): Promise<() => void> {
-  let release: () => void = () => {};
-  const nextLock = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  const wait = cloakBrowserMutex.then(() => release);
-  cloakBrowserMutex = nextLock;
-  return wait;
-}
 
 // 1. Build lookup map of already decoded/scraped articles (prefer SQLite if exists, otherwise CSV)
 const allExistingArticles: NewsArticle[] = [];
@@ -364,92 +352,7 @@ void Bun.write(
 );
 
 async function fetchText(url: string): Promise<string> {
-  return timeoutPromise(
-    (async () => {
-      try {
-        return await fetchDirectText(url);
-      } catch (error) {
-        // Only fall back to CloakBrowser for Cloudflare-protected domains like PinterPolitik
-        const requiresCloak =
-          url.includes("pinterpolitik.com") && !url.includes("news.google.com");
-        if (Bun.env.CLOAK_BROWSER === "1" && requiresCloak) {
-          return await fetchWithCloakBrowser(url);
-        }
-        throw error;
-      }
-    })(),
-    25_000,
-    `Fetching text timed out`,
-  );
-}
-
-async function fetchDirectText(url: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: {
-      "user-agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    },
-    signal: AbortSignal.timeout(15_000),
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch ${url}: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  return response.text();
-}
-
-async function fetchWithCloakBrowser(url: string): Promise<string> {
-  const release = await acquireMutex();
-  try {
-    const cloakBrowser = await dynamicImport("cloakbrowser");
-    const launch = cloakBrowser.launch;
-    if (!isCloakLaunch(launch)) {
-      throw new Error("cloakbrowser package does not expose launch()");
-    }
-
-    const browser = await launch({ headless: true });
-    try {
-      const page = await browser.newPage();
-      await page.goto(url, {
-        timeout: 20_000,
-        waitUntil: "domcontentloaded",
-      });
-
-      return await page.content();
-    } finally {
-      await browser.close();
-    }
-  } finally {
-    release();
-  }
-}
-
-async function dynamicImport(
-  specifier: string,
-): Promise<Record<string, unknown>> {
-  return import(specifier) as Promise<Record<string, unknown>>;
-}
-
-interface CloakPage {
-  goto(
-    url: string,
-    options: { readonly timeout: number; readonly waitUntil: string },
-  ): Promise<unknown>;
-  content(): Promise<string>;
-}
-
-interface CloakBrowser {
-  newPage(): Promise<CloakPage>;
-  close(): Promise<unknown>;
-}
-
-function isCloakLaunch(
-  value: unknown,
-): value is (options: { readonly headless: boolean }) => Promise<CloakBrowser> {
-  return typeof value === "function";
+  return fetchNewsText(url);
 }
 
 function logSourceError(source: NewsSource, error: unknown): void {

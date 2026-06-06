@@ -9,6 +9,7 @@ import type {
   NewsArticleStore,
   NewsSource,
 } from "./modules/news/types";
+import { fetchNewsText } from "./shared/http/fetchNewsText";
 import { createWebRoutes } from "./modules/web/webRoutes";
 
 export interface CreateAppOptions {
@@ -21,7 +22,7 @@ export interface CreateAppOptions {
 export function createApp(options: CreateAppOptions = {}): Hono {
   const newsService = new NewsService({
     sources: options.sources ?? defaultNewsSources,
-    fetchText: options.fetchText ?? fetchText,
+    fetchText: options.fetchText ?? fetchNewsText,
     cacheTtlMs: options.cacheTtlMs ?? 300_000,
     articleStore:
       options.articleStore ??
@@ -40,23 +41,6 @@ export function createApp(options: CreateAppOptions = {}): Hono {
   app.route("/v2", createNewsRoutes(newsService));
 
   return app;
-}
-
-async function fetchText(url: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: {
-      "user-agent": "beritaku-news-api/1.0",
-    },
-    signal: AbortSignal.timeout(10_000),
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch ${url}: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  return response.text();
 }
 
 function logSourceError(source: NewsSource, error: unknown): void {

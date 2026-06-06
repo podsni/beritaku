@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-06-07
+
+### Added
+
+- **`fetchNewsText` Utility** (`src/shared/http/fetchNewsText.ts`): Extracted shared HTTP fetch logic into a dedicated module. Supports configurable timeouts (`directTimeoutMs`, `browserTimeoutMs`, `overallTimeoutMs`), pluggable `fetchImpl`, and optional browser fallback via `cloakbrowser`. A mutex ensures sequential browser launches.
+- **Browser Fallback with Auto-detection**: `fetchNewsText` automatically falls back to `cloakbrowser` on HTTP 401/403/408/429/451/503 errors or Cloudflare 5xx ranges. Google News URLs are always excluded from browser fallback.
+- **Dual-Store Refresh Script**: `refreshNewsCsv.ts` now writes to **both** `data/news-cache.csv` and `data/news-cache.sqlite` simultaneously on every refresh run, keeping both stores in sync.
+- **Smart Cache Merge in Refresh**: Existing articles from SQLite (preferred) or CSV are loaded first. Fresh feed articles are matched by title key or decoded URL — cached decoded URLs are reused, preventing redundant Google News decoding.
+- **Per-Source Scrape Prioritization**: Refresh script processes up to 25 newest unresolved articles per source with concurrency 15, then defers the rest with a Bing thumbnail fallback.
+- **Expanded Indonesian Sources**: Registry now includes `kompas-id-general` (Kompas.id via Google News), `bbc-indonesia` (BBC Bahasa Indonesia RSS), `cnbc-ekonomi`, `detik-finance`, `kompas-tekno`, `merdeka-tekno`, `cna-business`, and `cna-sports`.
+- **Expanded International Sources**: Added `bloomberg-asia-business`, `wsj-business`, `cnbc-world-business`, `rt-general`, `aljazeera-general`, `dw-general`, `the-diplomat-general`, `war-on-the-rocks-general`, `historytoday-general`, `nbcnews-general`, `economist-business`, `forbes-business`, `nature-technology`.
+- **Crypto & Finance Sources**: Added `cryptowave-business` (Indonesia) and `bloomberg-crypto-business`.
+- **Sports Sources**: Added `goal-indonesia-sports`, `goal-global-sports`, `athletic-football-sports`, `coaches-voice-sports`.
+- **Cultural & Lifestyle Sources**: Added `mojok-general`, `indoprogress-general`, `sejuk-general`, `pinterpolitik-general`, `historia-general`.
+- **Media Lokal Malang Raya & Jawa Timur**: Added `tugumalang-general`, `malangtimes-general`, `malang-post-general`, `radarmalang-general`, `suryamalang-general`, `suara-surabaya-general`, `jatim-times-general`.
+- **Wired Multi-Category Sources**: Added `wired-general`, `wired-business`, `wired-sports`, `wired-entertainment` alongside existing `wired-technology`.
+- **Extended Test Suite** (`src/index.test.ts`): Added 134 lines of new tests covering `fetchNewsText` (direct fetch, browser fallback, timeout, mutex), source registry completeness, category filtering in `/v2/everything`, CSV store edge cases, and article deduplication in the refresh flow.
+- **`LISTMEDIA.md`**: New document listing all 110+ source IDs organized by category, with source URLs, feed methods (RSS/HTML/Google News), and language.
+- **Detailed `README.md`**: Fully rewritten with parameter tables for all endpoints, architecture directory tree, environment variable reference, refresh cache workflow, and category-grouped source listing.
+
+### Changed
+
+- **`src/app.ts`**: Replaced inline `fetch()` call with `fetchNewsText` from the new shared module. Storage selection logic is now cleaner with explicit `USE_SQLITE` env check.
+- **`src/scripts/refreshNewsCsv.ts`**: Major overhaul — added SQLite read-back for existing articles, concurrent scraping workers, per-source article cap (N=25), deduplication by title key and URL, and dual CSV+SQLite write at the end.
+- **`src/modules/news/rssAdapter.ts`**: Improved `media:group` extraction for Atom entries; added HTML `<img>` fallback extraction in both `parseItem` and `parseAtomEntry`.
+- **`src/modules/news/sourceRegistry.ts`**: Added 30+ new source definitions. All new international sources explicitly set `language: "en"`. All new local Indonesian sources explicitly set `language: "id"`.
+
+### Fixed
+
+- **Google News URL Not Re-decoded**: Refresh script now correctly identifies cached vs. uncached articles and avoids re-decoding URLs that were already resolved in a previous run.
+- **Missing Images for Google News Articles**: Fallback to Bing thumbnail (`tse1.mm.bing.net/th?q=...`) is applied consistently for any article without an `og:image`.
+- **Atom Feed Image Extraction**: Fixed edge case where `media:thumbnail` or `media:content` inside `media:group` was not extracted for Atom entries.
+- **Duplicate Articles in Cache**: Deduplication now uses both `title-key` (source_id + title) and `url` to prevent the same article appearing twice after a refresh.
+
 ### Added
 
 - **Scalar API Reference Integration**: Integrated Scalar's premium API documentation experience into the portal with complete endpoint testing and documentation.
