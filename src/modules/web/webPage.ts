@@ -13,6 +13,7 @@ export function renderHomePage(): string {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/app.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.28.5"></script>
     <script type="module" src="/assets/app.js"></script>
   </head>
   <body>
@@ -21,13 +22,19 @@ export function renderHomePage(): string {
 
     <main class="api-shell">
       <aside class="rail" aria-label="Navigasi Utama">
-        <a class="brand" href="/" aria-label="Beritaku Home">
-          <span class="brand-mark">B</span>
-          <span>
-            <strong>Beritaku</strong>
-            <small>News API Indonesia</small>
-          </span>
-        </a>
+        <div class="rail-top">
+          <a class="brand" href="/" aria-label="Beritaku Home">
+            <span class="brand-mark">B</span>
+            <span class="brand-copy">
+              <strong>Beritaku</strong>
+              <small>News API Indonesia</small>
+            </span>
+          </a>
+          <button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-label="Sembunyikan sidebar" aria-expanded="true">
+            <svg class="sidebar-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18"></path><path d="M3 12h18"></path><path d="M3 19h18"></path></svg>
+            <span class="sidebar-toggle-text">Hide</span>
+          </button>
+        </div>
         
         <nav class="endpoint-nav" aria-label="Menu Navigasi">
           <button id="tab-portal" class="rail-tab-btn active" type="button">
@@ -42,10 +49,15 @@ export function renderHomePage(): string {
             <span class="btn-icon">📖</span>
             <span class="btn-text">Panduan API</span>
           </button>
+          <button id="tab-scalar" class="rail-tab-btn" type="button">
+            <span class="btn-icon">🧪</span>
+            <span class="btn-text">Scalar API Reference</span>
+          </button>
 
           <!-- Hidden anchors to keep existing tests and element compatibility intact -->
           <div style="display: none;">
             <a href="#explorer">API Explorer</a>
+            <a href="#scalar-api-reference">Scalar API Reference</a>
             <a href="#top-headlines">Top Headlines</a>
             <a href="#everything">Everything</a>
             <a href="#sources">Sources</a>
@@ -105,6 +117,16 @@ export function renderHomePage(): string {
               <button class="portal-cat-btn" data-category="business" type="button">Bisnis</button>
               <button class="portal-cat-btn" data-category="sports" type="button">Olahraga</button>
               <button class="portal-cat-btn" data-category="entertainment" type="button">Hiburan</button>
+              <button class="portal-cat-btn" data-category="politics" type="button">Politik</button>
+              <button class="portal-cat-btn" data-category="law" type="button">Hukum</button>
+              <button class="portal-cat-btn" data-category="world" type="button">Dunia</button>
+              <button class="portal-cat-btn" data-category="health" type="button">Kesehatan</button>
+              <button class="portal-cat-btn" data-category="education" type="button">Pendidikan</button>
+              <button class="portal-cat-btn" data-category="science" type="button">Sains</button>
+              <button class="portal-cat-btn" data-category="automotive" type="button">Otomotif</button>
+              <button class="portal-cat-btn" data-category="travel" type="button">Travel</button>
+              <button class="portal-cat-btn" data-category="lifestyle" type="button">Lifestyle</button>
+              <button class="portal-cat-btn" data-category="environment" type="button">Lingkungan</button>
               <button class="portal-cat-btn bookmark-filter-btn" id="portal-bookmark-filter" type="button" style="border-color: var(--tomato); color: var(--tomato);">
                 <span>⭐ Tersimpan</span>
               </button>
@@ -217,7 +239,24 @@ export function renderHomePage(): string {
               <button type="button" class="preset-chip active" data-preset="breaking">Breaking nasional</button>
               <button type="button" class="preset-chip" data-preset="tech">Teknologi</button>
               <button type="button" class="preset-chip" data-preset="business">Bisnis</button>
+              <button type="button" class="preset-chip" data-preset="politics">Politik</button>
+              <button type="button" class="preset-chip" data-preset="health">Kesehatan</button>
               <button type="button" class="preset-chip" data-preset="search">Cari ekonomi</button>
+            </div>
+
+            <div class="playground-metric-strip" aria-label="Ringkasan cara membaca response API">
+              <div class="playground-metric">
+                <span>Format</span>
+                <strong>NewsAPI-like JSON</strong>
+              </div>
+              <div class="playground-metric">
+                <span>Cache</span>
+                <strong>Fast fallback + refresh</strong>
+              </div>
+              <div class="playground-metric">
+                <span>Observability</span>
+                <strong>Status, latency, payload</strong>
+              </div>
             </div>
 
             <form class="request-grid" id="api-form">
@@ -238,7 +277,18 @@ export function renderHomePage(): string {
                   <option value="sports">Sports</option>
                   <option value="technology">Technology</option>
                   <option value="entertainment">Entertainment</option>
+                  <option value="politics">Politics / smart search</option>
+                  <option value="law">Law / smart search</option>
+                  <option value="world">World / smart search</option>
+                  <option value="health">Health / smart search</option>
+                  <option value="education">Education / smart search</option>
+                  <option value="science">Science / smart search</option>
+                  <option value="automotive">Automotive / smart search</option>
+                  <option value="travel">Travel / smart search</option>
+                  <option value="lifestyle">Lifestyle / smart search</option>
+                  <option value="environment">Environment / smart search</option>
                 </select>
+                <small id="category-mode" class="field-hint">Kategori standar backend.</small>
               </label>
               <label>
                 <span>Search</span>
@@ -323,7 +373,24 @@ export function renderHomePage(): string {
               </div>
 
               <div class="tab-content" id="tab-content-json" role="tabpanel" aria-labelledby="tab-btn-json" style="display: none;">
-                <pre id="response-output">Pilih parameter, lalu jalankan request.</pre>
+                <div class="json-response-shell">
+                  <div class="json-response-header">
+                    <div>
+                      <p class="eyebrow">Response Inspector</p>
+                      <h3>JSON Payload</h3>
+                    </div>
+                    <div class="json-response-actions">
+                      <button class="ghost-action" type="button" id="response-copy-json">Copy JSON</button>
+                    </div>
+                  </div>
+                  <div class="json-response-meta" aria-label="Metadata response JSON">
+                    <span id="json-meta-status">Status: idle</span>
+                    <span id="json-meta-time">Latency: --</span>
+                    <span id="json-meta-size">Size: --</span>
+                    <span id="json-meta-count">Articles: --</span>
+                  </div>
+                  <pre id="response-output" class="json-response-code"><code id="json-response-code">Pilih parameter, lalu jalankan request.</code></pre>
+                </div>
               </div>
             </div>
             <div class="source-summary" id="source-summary">
@@ -341,6 +408,24 @@ export function renderHomePage(): string {
               Integrasikan feed berita Indonesia ke dalam aplikasi Anda dengan mudah. API kami dirancang kompatibel dengan format respon NewsAPI.
             </p>
           </header>
+
+          <section id="docs-api-maturity" class="docs-status-grid" aria-label="Ringkasan kesiapan API">
+            <article>
+              <span>Spec</span>
+              <strong>OpenAPI 3.1</strong>
+              <p>Tersedia di <code>/openapi.json</code> dan dipakai langsung oleh Scalar.</p>
+            </article>
+            <article>
+              <span>Explorer</span>
+              <strong>Scalar + Playground</strong>
+              <p>Docs interaktif untuk kontrak API dan playground lokal untuk response aktual.</p>
+            </article>
+            <article>
+              <span>Mode kategori</span>
+              <strong>Core + Smart</strong>
+              <p>Kategori utama memakai backend, kategori tambahan memakai pencarian pintar.</p>
+            </article>
+          </section>
 
           <!-- Quick Setup Card -->
           <div class="docs-section-card">
@@ -479,6 +564,92 @@ export function renderHomePage(): string {
                 <code class="endpoint-path">/v2/top-headlines/sources</code>
               </div>
               <p class="endpoint-desc">Mengembalikan daftar seluruh media nasional aktif yang terintegrasi di sistem Beritaku.</p>
+            </div>
+          </div>
+
+          <div id="docs-response-schema" class="docs-section-card">
+            <h2>📦 Skema Response</h2>
+            <p>Semua endpoint publik mengembalikan JSON stabil agar mudah dipakai di frontend, mobile app, atau worker backend.</p>
+            <div class="docs-detail-grid">
+              <article class="docs-detail-tile">
+                <h3>Response sukses</h3>
+                <ul>
+                  <li><code>status</code>: selalu <code>ok</code>.</li>
+                  <li><code>totalResults</code>: total artikel sebelum pagination.</li>
+                  <li><code>articles</code>: daftar artikel yang sudah dinormalisasi.</li>
+                  <li><code>source</code>: objek berisi <code>id</code> dan <code>name</code> media.</li>
+                </ul>
+              </article>
+              <article class="docs-detail-tile">
+                <h3>Response error</h3>
+                <ul>
+                  <li><code>status</code>: selalu <code>error</code>.</li>
+                  <li><code>code</code>: kode mesin seperti <code>parameterInvalid</code>.</li>
+                  <li><code>message</code>: penjelasan singkat untuk debugging.</li>
+                  <li>Status HTTP mengikuti jenis error, misalnya <code>400</code> untuk parameter salah.</li>
+                </ul>
+              </article>
+            </div>
+            <div class="code-block-wrapper">
+              <div class="code-block-header">
+                <span>SUCCESS SHAPE</span>
+                <button class="copy-code-btn" data-code="{&#10;  &quot;status&quot;: &quot;ok&quot;,&#10;  &quot;totalResults&quot;: 120,&#10;  &quot;articles&quot;: [&#10;    {&#10;      &quot;source&quot;: { &quot;id&quot;: &quot;antara-general&quot;, &quot;name&quot;: &quot;ANTARA News&quot; },&#10;      &quot;author&quot;: null,&#10;      &quot;title&quot;: &quot;Judul berita&quot;,&#10;      &quot;description&quot;: &quot;Ringkasan berita&quot;,&#10;      &quot;url&quot;: &quot;https://example.com/news&quot;,&#10;      &quot;urlToImage&quot;: null,&#10;      &quot;publishedAt&quot;: &quot;2026-06-06T09:00:00.000Z&quot;,&#10;      &quot;content&quot;: &quot;Ringkasan konten&quot;&#10;    }&#10;  ]&#10;}">Salin</button>
+              </div>
+              <pre><code>{
+  <span class="code-str">"status"</span>: <span class="code-str">"ok"</span>,
+  <span class="code-str">"totalResults"</span>: 120,
+  <span class="code-str">"articles"</span>: [
+    {
+      <span class="code-str">"source"</span>: { <span class="code-str">"id"</span>: <span class="code-str">"antara-general"</span>, <span class="code-str">"name"</span>: <span class="code-str">"ANTARA News"</span> },
+      <span class="code-str">"title"</span>: <span class="code-str">"Judul berita"</span>,
+      <span class="code-str">"publishedAt"</span>: <span class="code-str">"2026-06-06T09:00:00.000Z"</span>
+    }
+  ]
+}</code></pre>
+            </div>
+          </div>
+
+          <div id="docs-category-guide" class="docs-section-card">
+            <h2>🗂️ Panduan Kategori</h2>
+            <p>Backend menerima kategori inti yang stabil. Untuk kebutuhan editorial yang lebih spesifik, frontend memakai kategori pintar dan menerjemahkannya menjadi pencarian terarah di endpoint <code>/v2/everything</code>.</p>
+            <div class="category-guide-grid">
+              <article>
+                <span>Core backend</span>
+                <strong>all, general, business, sports, technology, entertainment</strong>
+                <p>Dipakai langsung sebagai query <code>category</code> di endpoint top headlines dan everything.</p>
+              </article>
+              <article>
+                <span>Smart search</span>
+                <strong>politik, hukum, dunia, kesehatan, pendidikan, sains</strong>
+                <p>Dipetakan ke kata kunci Indonesia agar tetap kompatibel dengan kontrak API.</p>
+              </article>
+              <article>
+                <span>Editorial discovery</span>
+                <strong>otomotif, travel, lifestyle, lingkungan</strong>
+                <p>Cocok untuk eksplorasi portal karena mengambil hasil dari banyak media tanpa memperpanjang daftar source.</p>
+              </article>
+            </div>
+          </div>
+
+          <div id="docs-best-practices" class="docs-section-card">
+            <h2>🧭 Praktik Integrasi</h2>
+            <div class="docs-detail-grid">
+              <article class="docs-detail-tile">
+                <h3>Query yang disarankan</h3>
+                <p>Gunakan <code>category</code> untuk filter luas dan <code>sources</code> untuk media spesifik. Hindari mengirim daftar source terlalu panjang dari frontend.</p>
+              </article>
+              <article class="docs-detail-tile">
+                <h3>Refresh dan cache</h3>
+                <p>Request normal cepat karena memakai cache/fallback. Gunakan <code>refresh=true</code> hanya untuk source spesifik atau proses backend terjadwal.</p>
+              </article>
+              <article class="docs-detail-tile">
+                <h3>Pagination aman</h3>
+                <p>Mulai dari <code>pageSize=10</code> atau <code>20</code>. Naikkan perlahan untuk menjaga response tetap ringan di browser.</p>
+              </article>
+              <article class="docs-detail-tile">
+                <h3>Error handling</h3>
+                <p>Selalu cek <code>status</code>. Jika <code>error</code>, tampilkan <code>message</code> dan simpan <code>code</code> untuk observability.</p>
+              </article>
             </div>
           </div>
 
@@ -646,6 +817,31 @@ export function renderHomePage(): string {
 }</pre>
             </article>
           </section>
+        </div>
+
+        <!-- ================= VIEW 4: SCALAR API REFERENCE ================= -->
+        <div id="view-scalar" class="workspace-view">
+          <div class="scalar-fullpage">
+            <div class="scalar-docs-heading scalar-compact-header">
+              <div>
+                <p class="eyebrow">OpenAPI 3.1</p>
+                <h1>Scalar API Reference</h1>
+                <p>Explorer kontrak API dari <code>/openapi.json</code>.</p>
+              </div>
+              <div class="scalar-shell-actions">
+                <a class="ghost-link" href="/openapi.json" target="_blank" rel="noreferrer">OpenAPI JSON</a>
+                <button class="ghost-action" id="scalar-refresh-btn" type="button">Reload Spec</button>
+              </div>
+            </div>
+            <div class="scalar-docs-shell">
+              <div id="scalar-api-reference" class="scalar-api-reference" data-spec-url="/openapi.json">
+              <div class="scalar-loading">
+                <strong>Memuat Scalar API Reference...</strong>
+                <span>Jika koneksi CDN belum tersedia, buka spec manual melalui tombol OpenAPI JSON.</span>
+              </div>
+              </div>
+            </div>
+          </div>
         </div>
 
       </section>

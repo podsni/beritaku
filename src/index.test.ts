@@ -146,19 +146,109 @@ describe("News API Indonesia", () => {
     expect(html).toContain("Breaking nasional");
     expect(html).toContain("portal-refresh-btn");
     expect(html).toContain("portal-refresh-status");
+    expect(html).toContain("json-response-shell");
+    expect(html).toContain("json-response-code");
+    expect(html).toContain("response-copy-json");
+    expect(html).toContain("docs-response-schema");
+    expect(html).toContain("docs-best-practices");
+    expect(html).toContain('data-category="politics"');
+    expect(html).toContain('data-category="health"');
+    expect(html).toContain("category-mode");
+    expect(html).toContain("scalar-api-reference");
+    expect(html).toContain("docs-api-maturity");
+    expect(html).toContain("docs-category-guide");
+    expect(html).toContain("tab-scalar");
+    expect(html).toContain("view-scalar");
+    expect(html).toContain("sidebar-toggle");
+    expect(html).toContain("Scalar API Reference");
+    expect(html).toContain("scalar-fullpage");
+    expect(html).toContain("scalar-compact-header");
+    expect(html).toContain("scalar-shell-actions");
+    expect(html).toContain(
+      "https://cdn.jsdelivr.net/npm/@scalar/api-reference",
+    );
 
     expect(css).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
     expect(css).toContain("@media (max-width: 520px)");
     expect(css).toContain("content-visibility: auto");
     expect(css).toContain("prefers-reduced-motion: reduce");
+    expect(css).toContain(".json-token-key");
+    expect(css).toContain(".playground-metric-strip");
+    expect(css).toContain(".scalar-docs-shell");
+    expect(css).toContain(".category-guide-grid");
+    expect(css).toContain(".api-shell.sidebar-collapsed");
+    expect(css).toContain("body.dark-theme .scalar-docs-shell");
+    expect(css).toContain("@media (max-width: 900px)");
+    expect(css).toContain(".workspace.scalar-workspace");
+    expect(css).toContain(".scalar-fullpage");
+    expect(css).toContain(".scalar-compact-header");
+    expect(css).toContain("height: calc(100vh - 96px)");
 
     expect(js).toContain("applyPreset");
     expect(js).toContain("AbortController");
     expect(js).toContain('img.decoding = "async"');
     expect(js).toContain("updateEndpointStats");
+    expect(js).toContain("renderJsonResponse");
+    expect(js).toContain("syntaxHighlightJson");
+    expect(js).toContain("updateJsonMeta");
     expect(js).toContain("refresh=true");
     expect(js).toContain("PORTAL_AUTO_REFRESH_MS");
     expect(js).toContain("fetchPortalJson");
+    expect(js).toContain("smartCategoryMap");
+    expect(js).toContain("initializeScalarDocs");
+    expect(js).toContain("tabScalar");
+    expect(js).toContain("sidebarToggle");
+    expect(js).toContain("applySidebarState");
+    expect(js).toContain("syncScalarTheme");
+    expect(js).toContain("scalar-workspace");
+  });
+
+  test("serves an OpenAPI document for Scalar API documentation", async () => {
+    const app = createTestApp();
+    const response = await app.request("/openapi.json");
+    const spec = (await response.json()) as {
+      readonly openapi: string;
+      readonly info: {
+        readonly title: string;
+      };
+      readonly paths: Record<
+        string,
+        {
+          readonly get: {
+            readonly parameters: readonly unknown[];
+          };
+        }
+      >;
+    };
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("application/json");
+    expect(spec.openapi).toBe("3.1.0");
+    expect(spec.info.title).toBe("Beritaku News API");
+    expect(spec.paths["/v2/top-headlines"]!.get.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "category",
+          schema: expect.objectContaining({
+            enum: expect.arrayContaining([
+              "all",
+              "general",
+              "business",
+              "sports",
+              "technology",
+              "entertainment",
+            ]),
+          }),
+        }),
+      ]),
+    );
+    expect(spec.paths["/v2/everything"]!.get.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "q",
+        }),
+      ]),
+    );
   });
 
   test("returns NewsAPI-like top headlines for Indonesia RSS sources", async () => {

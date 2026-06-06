@@ -19,15 +19,21 @@ export const appCss = `
 body.dark-theme {
   color-scheme: dark;
   --ink: #f1f5f3;
-  --muted: #8e9e96;
-  --line: #2e3b35;
-  --paper: #0c0f0d;
-  --surface: #131a16;
-  --charcoal: #070908;
+  --muted: #b5c3bc;
+  --line: #3b4a43;
+  --paper: #0f1311;
+  --surface: #18201c;
+  --charcoal: #050807;
   --mint: #c6ea59;
-  --tomato: #f05238;
+  --tomato: #ff6a52;
   --sky: #6bcfe5;
-  --shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+  --shadow: 0 16px 48px rgba(0, 0, 0, 0.38);
+}
+
+html:has(body.dark-theme),
+body.dark-theme {
+  color: var(--ink);
+  background: var(--paper);
 }
 
 * {
@@ -77,7 +83,13 @@ pre {
 .api-shell {
   display: grid;
   grid-template-columns: 292px minmax(0, 1fr);
+  width: 100%;
   min-height: 100vh;
+  transition: grid-template-columns 0.22s ease;
+}
+
+.api-shell.sidebar-collapsed {
+  grid-template-columns: 86px minmax(0, 1fr);
 }
 
 /* Left sidebar rail design */
@@ -89,11 +101,19 @@ pre {
   flex-direction: column;
   gap: 28px;
   height: 100vh;
+  min-width: 0;
   padding: 28px;
   color: #f4f0df;
   background: var(--charcoal);
   border-right: 1px solid rgb(255 255 255 / 8%);
   z-index: 10;
+}
+
+.rail-top {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .brand {
@@ -141,9 +161,65 @@ pre {
   font-size: 0.75rem;
 }
 
+.sidebar-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 42px;
+  min-height: 42px;
+  padding: 0 10px;
+  color: #f4f0df;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--mint);
+}
+
+.api-shell.sidebar-collapsed .rail {
+  gap: 18px;
+  padding: 22px 14px;
+}
+
+.api-shell.sidebar-collapsed .rail-top {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.api-shell.sidebar-collapsed .brand {
+  grid-template-columns: 44px;
+}
+
+.api-shell.sidebar-collapsed .brand-copy,
+.api-shell.sidebar-collapsed .btn-text,
+.api-shell.sidebar-collapsed .theme-toggle-btn span,
+.api-shell.sidebar-collapsed .rail-note,
+.api-shell.sidebar-collapsed .sidebar-toggle-text {
+  display: none;
+}
+
+.api-shell.sidebar-collapsed .rail-tab-btn {
+  justify-content: center;
+  padding: 13px 0;
+}
+
+.api-shell.sidebar-collapsed .rail-tab-btn:hover {
+  transform: none;
+}
+
 .endpoint-nav {
   display: grid;
   gap: 10px;
+  min-width: 0;
 }
 
 /* Rail custom buttons styled as sidebar links */
@@ -231,14 +307,26 @@ pre {
   border-color: #f4f0df;
 }
 
+body.dark-theme .theme-toggle-btn,
+body.dark-theme .sidebar-toggle,
+body.dark-theme .rail-tab-btn {
+  color: #f7f4e7;
+}
+
 /* Workspace wrapper */
 .workspace {
   width: 100%;
+  min-width: 0;
   max-width: 1220px;
   margin: 0 auto;
   padding: 40px;
   height: 100vh;
   overflow-y: auto;
+}
+
+.workspace.scalar-workspace {
+  max-width: none;
+  padding: 24px;
 }
 
 /* Multiview tab switching visibility */
@@ -955,6 +1043,42 @@ h2 {
   border-bottom: 1px solid var(--line);
 }
 
+.playground-metric-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 18px 28px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.playground-metric {
+  min-width: 0;
+  padding: 14px 16px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.playground-metric span,
+.playground-metric strong {
+  display: block;
+}
+
+.playground-metric span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.playground-metric strong {
+  margin-top: 6px;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
 .preset-chip {
   padding: 6px 12px;
   color: var(--muted);
@@ -997,6 +1121,16 @@ h2 {
   font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.field-hint {
+  display: block;
+  min-height: 18px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .request-grid select,
@@ -1113,16 +1247,111 @@ h2 {
   content-visibility: auto;
 }
 
+.json-response-shell {
+  overflow: hidden;
+  background: #0d1117;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.json-response-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  color: #f0f6fc;
+  background: #161b22;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.json-response-header .eyebrow {
+  margin-bottom: 4px;
+  color: var(--mint);
+}
+
+.json-response-header h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+
+.json-response-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.json-response-actions .ghost-action {
+  color: #f0f6fc;
+  background: #21262d;
+  border-color: #30363d;
+}
+
+.json-response-actions .ghost-action:hover {
+  background: #30363d;
+  border-color: #8b949e;
+}
+
+.json-response-meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.json-response-meta span {
+  min-width: 0;
+  padding: 10px 14px;
+  color: #8b949e;
+  background: #0d1117;
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.json-response-code {
+  min-height: 360px;
+}
+
+.json-token-key {
+  color: #79c0ff;
+}
+
+.json-token-string {
+  color: #a5d6ff;
+}
+
+.json-token-number {
+  color: #ffa657;
+}
+
+.json-token-boolean {
+  color: #ff7b72;
+}
+
+.json-token-null {
+  color: #d2a8ff;
+}
+
 #response-output {
   margin: 0;
   padding: 24px;
   color: #c9d1d9;
   background: #0d1117;
-  border-radius: 8px;
   font-size: 0.85rem;
   line-height: 1.5;
   overflow-x: auto;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 0;
+}
+
+#response-output code {
+  display: block;
+  min-width: max-content;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
 .source-summary {
@@ -1509,6 +1738,50 @@ h2 {
   margin-bottom: 32px;
 }
 
+.docs-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.docs-status-grid article,
+.category-guide-grid article {
+  min-width: 0;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.docs-status-grid span,
+.category-guide-grid span {
+  display: block;
+  color: var(--tomato);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.docs-status-grid strong,
+.category-guide-grid strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.12rem;
+  line-height: 1.2;
+}
+
+.docs-status-grid p,
+.category-guide-grid p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
 .docs-section-card {
   padding: 32px;
   margin-bottom: 32px;
@@ -1520,6 +1793,166 @@ h2 {
   margin-bottom: 16px;
   border-bottom: 1px solid var(--line);
   padding-bottom: 12px;
+}
+
+.docs-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.docs-detail-tile {
+  min-width: 0;
+  padding: 18px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.docs-detail-tile strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.docs-detail-tile p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.scalar-fullpage {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: calc(100vh - 96px);
+  min-height: 680px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
+.scalar-docs-shell {
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+}
+
+body.dark-theme .scalar-docs-shell {
+  background: #101513;
+  border-color: var(--line);
+}
+
+body.dark-theme .scalar-fullpage {
+  background: #151c18;
+  border-color: var(--line);
+}
+
+.scalar-docs-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  background: var(--surface);
+}
+
+.scalar-compact-header {
+  min-height: 68px;
+  padding: 10px 14px;
+}
+
+.scalar-compact-header .eyebrow {
+  margin-bottom: 2px;
+  font-size: 0.68rem;
+}
+
+.scalar-docs-heading h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 1.6vw, 1.3rem);
+  line-height: 1.1;
+}
+
+.scalar-docs-heading p {
+  max-width: 760px;
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.scalar-shell-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.scalar-docs-shell > p {
+  margin: 0;
+  padding: 0 32px 22px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.ghost-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 14px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.ghost-link:hover {
+  border-color: var(--ink);
+}
+
+.scalar-api-reference {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: var(--paper);
+  overflow: auto;
+}
+
+body.dark-theme .scalar-api-reference {
+  background: #101513;
+}
+
+.scalar-loading {
+  display: grid;
+  gap: 8px;
+  place-items: center;
+  min-height: 280px;
+  padding: 32px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.scalar-loading strong {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+}
+
+.category-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
 }
 
 .endpoint-doc-item {
@@ -2031,8 +2464,13 @@ h2 {
   .api-shell {
     grid-template-columns: 1fr;
   }
+
+  .api-shell.sidebar-collapsed {
+    grid-template-columns: 1fr;
+  }
   
   .rail {
+    width: 100%;
     height: auto;
     position: relative;
     border-right: none;
@@ -2040,16 +2478,79 @@ h2 {
     padding: 20px;
     gap: 16px;
   }
+
+  .rail-top {
+    gap: 14px;
+  }
   
   .endpoint-nav {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  .api-shell.sidebar-collapsed .brand-copy,
+  .api-shell.sidebar-collapsed .btn-text,
+  .api-shell.sidebar-collapsed .theme-toggle-btn span,
+  .api-shell.sidebar-collapsed .sidebar-toggle-text {
+    display: inline;
+  }
+
+  .api-shell.sidebar-collapsed .rail-note {
+    display: flex;
+  }
+
+  .api-shell.sidebar-collapsed .rail,
+  .api-shell.sidebar-collapsed .rail-top {
+    display: flex;
+  }
+
+  .api-shell.sidebar-collapsed .brand {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .api-shell.sidebar-collapsed .rail-tab-btn {
+    justify-content: flex-start;
+    padding: 12px 16px;
   }
   
   .workspace {
+    width: 100%;
+    max-width: none;
     padding: 24px;
     height: auto;
     overflow-y: visible;
+  }
+}
+
+@media (max-width: 900px) {
+  .rail {
+    padding: 16px;
+  }
+
+  .endpoint-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rail-tab-btn {
+    min-height: 48px;
+  }
+
+  .theme-toggle-btn,
+  .sidebar-toggle {
+    min-height: 40px;
+  }
+
+  .scalar-api-reference {
+    min-height: 0;
+  }
+
+  .scalar-fullpage {
+    height: auto;
+    min-height: calc(100vh - 32px);
+  }
+
+  .workspace.scalar-workspace {
+    padding: 16px;
   }
 }
 
@@ -2073,6 +2574,14 @@ h2 {
   .request-grid {
     grid-template-columns: 1fr;
   }
+
+  .playground-metric-strip,
+  .json-response-meta,
+  .docs-detail-grid,
+  .docs-status-grid,
+  .category-guide-grid {
+    grid-template-columns: 1fr;
+  }
   
   .primary-action {
     grid-column: span 1;
@@ -2094,6 +2603,41 @@ h2 {
 @media (max-width: 520px) {
   .endpoint-nav {
     grid-template-columns: 1fr;
+  }
+
+  .rail-top {
+    align-items: stretch;
+  }
+
+  .brand {
+    min-width: 0;
+  }
+
+  .theme-toggle-btn,
+  .sidebar-toggle {
+    width: 100%;
+  }
+
+  .scalar-docs-heading {
+    padding: 12px;
+  }
+
+  .scalar-compact-header {
+    min-height: auto;
+  }
+
+  .scalar-compact-header > div > p:not(.eyebrow) {
+    display: none;
+  }
+
+  .scalar-shell-actions {
+    width: 100%;
+  }
+
+  .scalar-shell-actions .ghost-link,
+  .scalar-shell-actions .ghost-action {
+    flex: 1 1 140px;
+    justify-content: center;
   }
   
   .portal-controls {
@@ -2236,28 +2780,121 @@ export const appJs = `
 const tabPortal = document.querySelector("#tab-portal");
 const tabConsole = document.querySelector("#tab-console");
 const tabDocs = document.querySelector("#tab-docs");
+const tabScalar = document.querySelector("#tab-scalar");
 
 const viewPortal = document.querySelector("#view-portal");
 const viewConsole = document.querySelector("#view-console");
 const viewDocs = document.querySelector("#view-docs");
+const viewScalar = document.querySelector("#view-scalar");
+const appShell = document.querySelector(".api-shell");
+const sidebarToggle = document.querySelector("#sidebar-toggle");
+const scalarRefreshBtn = document.querySelector("#scalar-refresh-btn");
+let scalarDocsInitialized = false;
+
+function syncScalarTheme() {
+  const target = document.querySelector("#scalar-api-reference");
+  if (!target) return;
+
+  const theme = document.body.classList.contains("dark-theme") ? "dark" : "light";
+  document.body.classList.toggle("dark-mode", theme === "dark");
+  document.body.classList.toggle("light-mode", theme === "light");
+  target.setAttribute("data-theme", theme);
+  target.style.colorScheme = theme;
+}
+
+function initializeScalarDocs() {
+  const target = document.querySelector("#scalar-api-reference");
+  if (!target || scalarDocsInitialized) return;
+
+  const scalar = window.Scalar;
+  if (!scalar || typeof scalar.createApiReference !== "function") {
+    const loading = target.querySelector(".scalar-loading span");
+    if (loading) {
+      loading.textContent = "Scalar belum siap. Spec tetap tersedia di /openapi.json.";
+    }
+    return;
+  }
+
+  scalarDocsInitialized = true;
+  syncScalarTheme();
+  scalar.createApiReference("#scalar-api-reference", {
+    url: target.getAttribute("data-spec-url") || "/openapi.json",
+    theme: document.body.classList.contains("dark-theme") ? "alternate" : "default",
+  });
+  window.setTimeout(syncScalarTheme, 0);
+  window.setTimeout(syncScalarTheme, 400);
+  window.setTimeout(syncScalarTheme, 1200);
+}
+
+function reloadScalarDocs() {
+  const target = document.querySelector("#scalar-api-reference");
+  if (!target) return;
+
+  scalarDocsInitialized = false;
+  target.innerHTML =
+    '<div class="scalar-loading"><strong>Memuat ulang Scalar API Reference...</strong><span>Mengambil ulang kontrak dari /openapi.json.</span></div>';
+  initializeScalarDocs();
+}
 
 function switchView(viewName) {
   if (tabPortal) tabPortal.classList.toggle("active", viewName === "portal");
   if (tabConsole) tabConsole.classList.toggle("active", viewName === "console");
   if (tabDocs) tabDocs.classList.toggle("active", viewName === "docs");
+  if (tabScalar) tabScalar.classList.toggle("active", viewName === "scalar");
   
   if (viewPortal) viewPortal.classList.toggle("active", viewName === "portal");
   if (viewConsole) viewConsole.classList.toggle("active", viewName === "console");
   if (viewDocs) viewDocs.classList.toggle("active", viewName === "docs");
+  if (viewScalar) viewScalar.classList.toggle("active", viewName === "scalar");
 
   // Scroll workspace to top
   const workspace = document.querySelector(".workspace");
-  if (workspace) workspace.scrollTop = 0;
+  if (workspace) {
+    workspace.classList.toggle("scalar-workspace", viewName === "scalar");
+    workspace.scrollTop = 0;
+  }
+
+  if (viewName === "scalar") {
+    initializeScalarDocs();
+  }
 }
 
 if (tabPortal) tabPortal.addEventListener("click", () => switchView("portal"));
 if (tabConsole) tabConsole.addEventListener("click", () => switchView("console"));
 if (tabDocs) tabDocs.addEventListener("click", () => switchView("docs"));
+if (tabScalar) tabScalar.addEventListener("click", () => switchView("scalar"));
+if (scalarRefreshBtn) scalarRefreshBtn.addEventListener("click", reloadScalarDocs);
+
+function applySidebarState(collapsed) {
+  if (!appShell || !sidebarToggle) return;
+
+  appShell.classList.toggle("sidebar-collapsed", collapsed);
+  sidebarToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  sidebarToggle.setAttribute(
+    "aria-label",
+    collapsed ? "Tampilkan sidebar" : "Sembunyikan sidebar",
+  );
+
+  const toggleText = sidebarToggle.querySelector(".sidebar-toggle-text");
+  if (toggleText) {
+    toggleText.textContent = collapsed ? "Show" : "Hide";
+  }
+}
+
+if (sidebarToggle) {
+  sidebarToggle.addEventListener("click", () => {
+    const collapsed = !(appShell && appShell.classList.contains("sidebar-collapsed"));
+    localStorage.setItem("sidebar-collapsed", collapsed ? "1" : "0");
+    applySidebarState(collapsed);
+  });
+}
+
+applySidebarState(localStorage.getItem("sidebar-collapsed") === "1");
+window.addEventListener("load", () => {
+  if (viewScalar && viewScalar.classList.contains("active")) {
+    initializeScalarDocs();
+  }
+});
 
 // Set Live Date in Portal Header
 function updateLiveDate() {
@@ -2279,6 +2916,13 @@ const pageSize = document.querySelector("#pageSize");
 const requestUrl = document.querySelector("#request-url");
 const requestStatus = document.querySelector("#request-status");
 const responseOutput = document.querySelector("#response-output");
+const jsonResponseCode = document.querySelector("#json-response-code");
+const jsonMetaStatus = document.querySelector("#json-meta-status");
+const jsonMetaTime = document.querySelector("#json-meta-time");
+const jsonMetaSize = document.querySelector("#json-meta-size");
+const jsonMetaCount = document.querySelector("#json-meta-count");
+const responseCopyJson = document.querySelector("#response-copy-json");
+const categoryMode = document.querySelector("#category-mode");
 const copyUrl = document.querySelector("#copy-url");
 const sourceSummary = document.querySelector("#source-summary");
 const quickPresets = document.querySelector(".quick-presets");
@@ -2339,6 +2983,7 @@ function applySavedGlobalTheme() {
     if (moonIcon) moonIcon.style.display = "inline-block";
     if (themeBtnText) themeBtnText.textContent = "Mode Gelap";
   }
+  syncScalarTheme();
 }
 
 if (themeToggleBtn) {
@@ -2349,11 +2994,13 @@ if (themeToggleBtn) {
       if (sunIcon) sunIcon.style.display = "inline-block";
       if (moonIcon) moonIcon.style.display = "none";
       if (themeBtnText) themeBtnText.textContent = "Mode Terang";
+      syncScalarTheme();
     } else {
       localStorage.setItem("global-theme", "light");
       if (sunIcon) sunIcon.style.display = "none";
       if (moonIcon) moonIcon.style.display = "inline-block";
       if (themeBtnText) themeBtnText.textContent = "Mode Gelap";
+      syncScalarTheme();
     }
   });
 }
@@ -2383,6 +3030,59 @@ const CACHE_TTL_MS = 60000; // 1 minute client-side cache
 let currentFontSize = 18; // default in px
 let isSerif = true;
 let currentTheme = "light";
+let lastJsonResponseText = "";
+
+const coreCategoryValues = new Set([
+  "all",
+  "general",
+  "business",
+  "sports",
+  "technology",
+  "entertainment",
+]);
+
+const smartCategoryMap = {
+  politics: {
+    label: "Politik",
+    query: "politik pemilu partai presiden dpr pemerintah",
+  },
+  law: {
+    label: "Hukum",
+    query: "hukum pengadilan kejaksaan kepolisian korupsi",
+  },
+  world: {
+    label: "Dunia",
+    query: "internasional dunia global luar negeri",
+  },
+  health: {
+    label: "Kesehatan",
+    query: "kesehatan dokter rumah sakit penyakit obat",
+  },
+  education: {
+    label: "Pendidikan",
+    query: "pendidikan sekolah kampus mahasiswa guru",
+  },
+  science: {
+    label: "Sains",
+    query: "sains riset penelitian antariksa iklim",
+  },
+  automotive: {
+    label: "Otomotif",
+    query: "otomotif mobil motor kendaraan listrik",
+  },
+  travel: {
+    label: "Travel",
+    query: "wisata perjalanan hotel destinasi liburan",
+  },
+  lifestyle: {
+    label: "Lifestyle",
+    query: "gaya hidup kuliner fashion keluarga",
+  },
+  environment: {
+    label: "Lingkungan",
+    query: "lingkungan iklim hutan sampah energi",
+  },
+};
 
 function setRequestStatus(message) {
   requestStatus.textContent = message;
@@ -2418,19 +3118,124 @@ function escapeAttribute(value) {
   return escapeHtml(value);
 }
 
+function getSmartCategory(value) {
+  return smartCategoryMap[value] || null;
+}
+
+function isCoreCategory(value) {
+  return coreCategoryValues.has(value);
+}
+
+function mergeSearchTerms(primary, secondary) {
+  const parts = [primary, secondary]
+    .map(part => String(part || "").trim())
+    .filter(part => part.length > 0);
+
+  return parts.join(" ");
+}
+
+function updateCategoryModeHint() {
+  if (!categoryMode) return;
+
+  const smartCategory = getSmartCategory(category.value);
+  categoryMode.textContent = smartCategory
+    ? smartCategory.label + " memakai smart search di /v2/everything."
+    : "Kategori standar backend.";
+}
+
+function formatPayloadSize(text) {
+  const bytes = new Blob([text || ""]).size;
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+}
+
+function syntaxHighlightJson(value) {
+  return String(value ?? "").replace(
+    /("(\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"\\s*:|"(\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"|\\b(true|false)\\b|\\bnull\\b|-?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)/g,
+    match => {
+      let tokenClass = "json-token-number";
+
+      if (match.startsWith('"')) {
+        tokenClass = match.trimEnd().endsWith(":") ? "json-token-key" : "json-token-string";
+      } else if (match === "true" || match === "false") {
+        tokenClass = "json-token-boolean";
+      } else if (match === "null") {
+        tokenClass = "json-token-null";
+      }
+
+      return '<span class="' + tokenClass + '">' + escapeHtml(match) + '</span>';
+    },
+  );
+}
+
+function updateJsonMeta(payload, options = {}) {
+  const statusLabel = options.statusLabel || (payload && payload.status ? String(payload.status) : "Idle");
+  const elapsedMs = typeof options.elapsedMs === "number" ? options.elapsedMs + "ms" : "--";
+  const responseText = typeof options.responseText === "string" ? options.responseText : lastJsonResponseText;
+  const articleCount = payload && Array.isArray(payload.articles)
+    ? String(payload.articles.length)
+    : "--";
+
+  if (jsonMetaStatus) jsonMetaStatus.textContent = "Status: " + statusLabel;
+  if (jsonMetaTime) jsonMetaTime.textContent = "Latency: " + elapsedMs;
+  if (jsonMetaSize) jsonMetaSize.textContent = "Size: " + formatPayloadSize(responseText);
+  if (jsonMetaCount) jsonMetaCount.textContent = "Articles: " + articleCount;
+}
+
+function renderJsonResponse(payload, options = {}) {
+  lastJsonResponseText = JSON.stringify(payload, null, 2);
+  const target = jsonResponseCode || responseOutput;
+
+  if (target) {
+    target.innerHTML = syntaxHighlightJson(lastJsonResponseText);
+  }
+
+  updateJsonMeta(payload, {
+    ...options,
+    responseText: lastJsonResponseText,
+  });
+}
+
+function renderJsonMessage(message, statusLabel) {
+  lastJsonResponseText = String(message ?? "");
+  const target = jsonResponseCode || responseOutput;
+
+  if (target) {
+    target.textContent = lastJsonResponseText;
+  }
+
+  updateJsonMeta(null, {
+    statusLabel: statusLabel || "Info",
+    responseText: lastJsonResponseText,
+  });
+}
+
 function buildRequestPath() {
-  const path = endpoint.value;
+  let path = endpoint.value;
   const params = new URLSearchParams();
+  const smartCategory = getSmartCategory(category.value);
 
   if (path === "/v2/top-headlines") {
-    params.set("country", "id");
-    params.set("category", category.value);
+    if (smartCategory) {
+      path = "/v2/everything";
+      params.set("q", mergeSearchTerms(smartCategory.query, query.value));
+    } else {
+      params.set("country", "id");
+      params.set("category", category.value);
+    }
     params.set("sources", sourcesInput.value);
   }
 
   if (path === "/v2/everything") {
-    if (query.value.trim() !== "") {
-      params.set("q", query.value.trim());
+    const smartSearch = smartCategory ? smartCategory.query : "";
+    const mergedQuery = mergeSearchTerms(smartSearch, query.value);
+
+    if (mergedQuery !== "") {
+      params.set("q", mergedQuery);
+    }
+    if (!smartCategory && category.value !== "all" && isCoreCategory(category.value)) {
+      params.set("category", category.value);
     }
     params.set("sources", sourcesInput.value);
   }
@@ -2450,11 +3255,12 @@ function buildRequestPath() {
 
 function syncRequestUrl() {
   requestUrl.textContent = buildRequestPath();
+  updateCategoryModeHint();
 }
 
 function syncFields() {
   const path = endpoint.value;
-  const showCategory = path === "/v2/top-headlines";
+  const showCategory = path !== "/v2/top-headlines/sources";
   const showSearch = path === "/v2/everything";
   const showSources = path !== "/v2/top-headlines/sources";
   const showPageSize = path !== "/v2/top-headlines/sources";
@@ -2484,6 +3290,14 @@ function applyPreset(preset) {
   } else if (preset === "business") {
     endpoint.value = "/v2/top-headlines";
     category.value = "business";
+    query.value = "";
+  } else if (preset === "politics") {
+    endpoint.value = "/v2/top-headlines";
+    category.value = "politics";
+    query.value = "";
+  } else if (preset === "health") {
+    endpoint.value = "/v2/top-headlines";
+    category.value = "health";
     query.value = "";
   } else if (preset === "search") {
     endpoint.value = "/v2/everything";
@@ -3209,7 +4023,10 @@ export async function runApiRequest(event) {
     const cached = apiCache.get(path);
     if (now - cached.timestamp < CACHE_TTL_MS) {
       setRequestStatus("OK 200 (Cached)");
-      responseOutput.textContent = JSON.stringify(cached.payload, null, 2);
+      renderJsonResponse(cached.payload, {
+        statusLabel: "OK 200 (Cached)",
+        elapsedMs: 0,
+      });
       updateEndpointStats(cached.payload);
       
       if (cached.payload.articles) {
@@ -3238,7 +4055,7 @@ export async function runApiRequest(event) {
   const requestController = new AbortController();
   activeRequestController = requestController;
   setRequestStatus("Loading");
-  responseOutput.textContent = "Mengambil data...";
+  renderJsonMessage("Mengambil data...", "Loading");
   
   // Show visual loader skeletons in reader feed
   renderSkeletons();
@@ -3257,7 +4074,10 @@ export async function runApiRequest(event) {
         ? "OK " + response.status + " · " + elapsedMs + "ms"
         : "Error " + response.status,
     );
-    responseOutput.textContent = JSON.stringify(payload, null, 2);
+    renderJsonResponse(payload, {
+      statusLabel: response.ok ? "OK " + response.status : "Error " + response.status,
+      elapsedMs: elapsedMs,
+    });
     updateEndpointStats(payload);
     
     if (response.ok) {
@@ -3295,7 +4115,14 @@ export async function runApiRequest(event) {
     }
 
     setRequestStatus("Network error");
-    responseOutput.textContent = error instanceof Error ? error.message : String(error);
+    renderJsonResponse({
+      status: "error",
+      code: "networkError",
+      message: error instanceof Error ? error.message : String(error),
+    }, {
+      statusLabel: "Network error",
+      elapsedMs: Date.now() - requestStartedAt,
+    });
     activeFeedArticles = [];
     totalResults = 0;
     feedHeaderBar.style.display = "none";
@@ -3328,6 +4155,20 @@ copyUrl.addEventListener("click", async () => {
   await navigator.clipboard.writeText(absoluteUrl);
   setRequestStatus("URL copied");
 });
+
+if (responseCopyJson) {
+  responseCopyJson.addEventListener("click", async () => {
+    const textToCopy = lastJsonResponseText || (responseOutput ? responseOutput.textContent : "");
+
+    if (!textToCopy) {
+      setRequestStatus("JSON kosong");
+      return;
+    }
+
+    await navigator.clipboard.writeText(textToCopy);
+    setRequestStatus("JSON copied");
+  });
+}
 
 updateEndpointStats();
 syncFields();
@@ -3762,19 +4603,22 @@ async function loadPortalNews(cat = 'all', q = '', isAppend = false, forceRefres
       data = { status: "ok", articles: filtered };
     } else {
       setPortalRefreshState("loading", "Mengambil berita terbaru...");
+      const smartCategory = getSmartCategory(cat);
+      const smartQuery = smartCategory ? smartCategory.query : "";
+      const mergedQuery = mergeSearchTerms(smartQuery, q);
       let url = "/v2/top-headlines?country=id&pageSize=60";
       if (forceRefresh) {
         url += "&refresh=true";
       }
       
-      if (q && q.trim() !== "") {
-        url = "/v2/everything?q=" + encodeURIComponent(q.trim()) + "&pageSize=60";
+      if (mergedQuery !== "") {
+        url = "/v2/everything?q=" + encodeURIComponent(mergedQuery) + "&pageSize=60";
         if (forceRefresh) {
           url += "&refresh=true";
         }
         if (currentPortalMedia !== "all") {
           url += "&sources=" + encodeURIComponent(currentPortalMedia);
-        } else if (cat && cat !== "all") {
+        } else if (!smartCategory && cat && cat !== "all") {
           url += "&category=" + encodeURIComponent(cat);
         }
       } else {
@@ -3800,7 +4644,7 @@ async function loadPortalNews(cat = 'all', q = '', isAppend = false, forceRefres
       }
 
       // If category is active during search, perform category filtering client-side
-      if (q && q.trim() !== "" && cat && cat !== "all") {
+      if (q && q.trim() !== "" && cat && cat !== "all" && !smartCategory) {
         data.articles = (data.articles ?? []).filter(art => {
           const artCat = getArticleCategory(art);
           return artCat === cat;

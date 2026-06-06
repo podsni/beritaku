@@ -26,6 +26,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .eslintcache
 .cache
 *.tsbuildinfo
+data/news-cache.sqlite
+data/*.sqlite-shm
+data/*.sqlite-wal
 
 # local agent tooling
 .agents

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Scalar API Reference Integration**: Integrated Scalar's premium API documentation experience into the portal with complete endpoint testing and documentation.
+- **OpenAPI 3.1 Specification**: Added a comprehensive OpenAPI definition available at `/openapi.json` to support machine-readable API discovery.
+- **Interactive JSON Explorer**: New client-side JSON renderer with syntax highlighting and deep link support in the API console.
+- **Enhanced API Console UI**: Re-designed the documentation interface with a collapsable sidebar, improved category guides, and better responsive behavior.
 - **SQLite Article Storage**: High-performance persistence layer using `bun:sqlite` for news articles, with automatic WAL mode and efficient indexing.
 - **Automatic Portal Refresh**: Integrated auto-refresh capability for the news portal with a dedicated "Live" status indicator and manual refresh controls.
 - **Advanced Tech Blog Sources**: Expanded news registry with high-quality engineering and security blogs (Simon Willison, Jeff Geerling, Krebs on Security, etc.) parsed from curated OPML.
