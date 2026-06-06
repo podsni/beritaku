@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { CsvArticleStore } from "./modules/news/csvArticleStore";
+import { SqliteArticleStore } from "./modules/news/sqliteArticleStore";
 import { createNewsRoutes } from "./modules/news/newsRoutes";
 import { NewsService } from "./modules/news/newsService";
 import { defaultNewsSources } from "./modules/news/sourceRegistry";
@@ -24,7 +25,11 @@ export function createApp(options: CreateAppOptions = {}): Hono {
     cacheTtlMs: options.cacheTtlMs ?? 300_000,
     articleStore:
       options.articleStore ??
-      new CsvArticleStore(Bun.env.NEWS_CSV_PATH ?? "data/news-cache.csv"),
+      (Bun.env.USE_SQLITE === "1" || Bun.env.NEWS_SQLITE_PATH !== undefined
+        ? new SqliteArticleStore(
+            Bun.env.NEWS_SQLITE_PATH ?? "data/news-cache.sqlite",
+          )
+        : new CsvArticleStore(Bun.env.NEWS_CSV_PATH ?? "data/news-cache.csv")),
     onSourceError: logSourceError,
   });
 

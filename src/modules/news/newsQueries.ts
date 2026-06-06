@@ -26,6 +26,7 @@ export function parseTopHeadlinesQuery(
     category,
     sources,
     language,
+    refresh: parseBoolean(query.refresh),
     ...pagination,
   };
 }
@@ -43,11 +44,14 @@ export function parseEverythingQuery(
 
   return {
     q: normalizeOptionalString(query.q),
+    category:
+      query.category === undefined ? undefined : parseCategory(query.category),
     sources,
     from: parseOptionalDate(query.from, "from"),
     to: parseOptionalDate(query.to, "to"),
     sortBy: "publishedAt",
     language,
+    refresh: parseBoolean(query.refresh),
     ...pagination,
   };
 }
@@ -126,4 +130,21 @@ function parseLanguage(value: string | undefined): NewsLanguage | undefined {
   }
 
   throw badRequest("parameterInvalid", "language must be one of: all, id, en");
+}
+
+function parseBoolean(value: string | undefined): boolean {
+  const normalized = normalizeOptionalString(value);
+  if (normalized === undefined) {
+    return false;
+  }
+
+  if (["1", "true", "yes"].includes(normalized.toLowerCase())) {
+    return true;
+  }
+
+  if (["0", "false", "no"].includes(normalized.toLowerCase())) {
+    return false;
+  }
+
+  throw badRequest("parameterInvalid", "refresh must be a boolean");
 }

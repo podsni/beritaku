@@ -21,6 +21,22 @@ export class TimedCache<T> {
     return cached.value;
   }
 
+  getWithStale(
+    key: string,
+  ): { readonly value: T; readonly isStale: boolean } | undefined {
+    if (this.ttlMs <= 0) {
+      return undefined;
+    }
+
+    const cached = this.values.get(key);
+    if (cached === undefined) {
+      return undefined;
+    }
+
+    const isStale = cached.expiresAt <= Date.now();
+    return { value: cached.value, isStale };
+  }
+
   set(key: string, value: T): void {
     if (this.ttlMs <= 0) {
       return;

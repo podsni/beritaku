@@ -316,6 +316,61 @@ pre {
   color: var(--muted);
 }
 
+.portal-refresh-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 7px 8px 7px 14px;
+  background: color-mix(in srgb, var(--surface) 88%, var(--mint));
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgb(18 24 21 / 5%);
+}
+
+.portal-refresh-status {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.portal-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 13px;
+  color: var(--charcoal);
+  background: var(--mint);
+  border: 1px solid color-mix(in srgb, var(--mint) 75%, var(--charcoal));
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 800;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.portal-refresh-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgb(18 24 21 / 12%);
+}
+
+.portal-refresh-btn:disabled {
+  cursor: wait;
+  opacity: 0.72;
+  transform: none;
+  box-shadow: none;
+}
+
+.portal-refresh-btn.is-loading .refresh-icon {
+  animation: refreshSpin 0.9s linear infinite;
+}
+
+@keyframes refreshSpin {
+  to { transform: rotate(360deg); }
+}
+
 /* Breaking News Ticker */
 .ticker-wrap {
   display: flex;
@@ -416,6 +471,12 @@ pre {
   background: var(--ink);
   color: var(--paper);
   border-color: var(--ink);
+}
+
+.portal-media-filter-wrapper {
+  width: 240px;
+  max-width: 100%;
+  flex-shrink: 0;
 }
 
 .portal-search {
@@ -2039,6 +2100,18 @@ h2 {
     flex-direction: column;
     align-items: stretch;
   }
+
+  .portal-refresh-strip {
+    width: 100%;
+    justify-content: space-between;
+    border-radius: 8px;
+  }
+
+  .portal-refresh-status {
+    min-width: 0;
+    white-space: normal;
+    text-align: left;
+  }
   
   .portal-search {
     min-width: 100%;
@@ -2447,53 +2520,60 @@ export async function loadSources() {
     availableSources = payload.sources ?? [];
 
     const optionsContainer = document.querySelector("#custom-sources-options");
-    if (!optionsContainer) return;
-    optionsContainer.innerHTML = "";
+    const portalContainer = document.querySelector("#portal-media-options");
 
-    // Add "Semua media"
-    const allOption = document.createElement("li");
-    allOption.className = "custom-select-option selected";
-    allOption.setAttribute("data-value", "all");
-    allOption.textContent = "Semua media";
-    optionsContainer.appendChild(allOption);
+    const populateOptions = (container, isPortal) => {
+      if (!container) return;
+      container.innerHTML = "";
 
-    // Group elements
-    const idSources = availableSources.filter(s => s.language !== "en");
-    const enSources = availableSources.filter(s => s.language === "en");
+      // Add "Semua media"
+      const allOption = document.createElement("li");
+      allOption.className = "custom-select-option selected";
+      allOption.setAttribute("data-value", "all");
+      allOption.textContent = isPortal ? "Semua Media" : "Semua media";
+      container.appendChild(allOption);
 
-    if (idSources.length > 0) {
-      const idHeader = document.createElement("div");
-      idHeader.className = "custom-select-group-header";
-      idHeader.setAttribute("data-group", "id");
-      idHeader.textContent = "🇮🇩 Bahasa Indonesia";
-      optionsContainer.appendChild(idHeader);
+      // Group elements
+      const idSources = availableSources.filter(s => s.language !== "en");
+      const enSources = availableSources.filter(s => s.language === "en");
 
-      idSources.forEach(source => {
-        const opt = document.createElement("li");
-        opt.className = "custom-select-option";
-        opt.setAttribute("data-value", source.id);
-        opt.setAttribute("data-group", "id");
-        opt.textContent = source.name + " - " + source.category;
-        optionsContainer.appendChild(opt);
-      });
-    }
+      if (idSources.length > 0) {
+        const idHeader = document.createElement("div");
+        idHeader.className = "custom-select-group-header";
+        idHeader.setAttribute("data-group", "id");
+        idHeader.textContent = "🇮🇩 Bahasa Indonesia";
+        container.appendChild(idHeader);
 
-    if (enSources.length > 0) {
-      const enHeader = document.createElement("div");
-      enHeader.className = "custom-select-group-header";
-      enHeader.setAttribute("data-group", "en");
-      enHeader.textContent = "🇬🇧 English";
-      optionsContainer.appendChild(enHeader);
+        idSources.forEach(source => {
+          const opt = document.createElement("li");
+          opt.className = "custom-select-option";
+          opt.setAttribute("data-value", source.id);
+          opt.setAttribute("data-group", "id");
+          opt.textContent = source.name + " - " + source.category;
+          container.appendChild(opt);
+        });
+      }
 
-      enSources.forEach(source => {
-        const opt = document.createElement("li");
-        opt.className = "custom-select-option";
-        opt.setAttribute("data-value", source.id);
-        opt.setAttribute("data-group", "en");
-        opt.textContent = source.name + " - " + source.category;
-        optionsContainer.appendChild(opt);
-      });
-    }
+      if (enSources.length > 0) {
+        const enHeader = document.createElement("div");
+        enHeader.className = "custom-select-group-header";
+        enHeader.setAttribute("data-group", "en");
+        enHeader.textContent = "🇬🇧 English";
+        container.appendChild(enHeader);
+
+        enSources.forEach(source => {
+          const opt = document.createElement("li");
+          opt.className = "custom-select-option";
+          opt.setAttribute("data-value", source.id);
+          opt.setAttribute("data-group", "en");
+          opt.textContent = source.name + " - " + source.category;
+          container.appendChild(opt);
+        });
+      }
+    };
+
+    populateOptions(optionsContainer, false);
+    populateOptions(portalContainer, true);
 
     const sourceCountStr = availableSources.length + " media";
     sourceSummary.innerHTML = "Backend registry memuat <strong>" + sourceCountStr + "</strong> terdaftar.";
@@ -2504,8 +2584,8 @@ export async function loadSources() {
 }
 
 // Custom select dropdown interactions
-const selectTrigger = document.querySelector(".custom-select-trigger");
-const customSelect = document.querySelector(".custom-select");
+const customSelect = document.querySelector("#custom-sources-select");
+const selectTrigger = customSelect ? customSelect.querySelector(".custom-select-trigger") : null;
 const searchInput = document.querySelector("#sources-search-input");
 const optionsList = document.querySelector("#custom-sources-options");
 
@@ -2538,35 +2618,39 @@ if (searchInput) {
     e.stopPropagation();
   });
 
+  let consoleSearchRaf = null;
   searchInput.addEventListener("input", (e) => {
-    const filter = e.target.value.toLowerCase().trim();
-    const options = optionsList.querySelectorAll(".custom-select-option");
-    const headers = optionsList.querySelectorAll(".custom-select-group-header");
-    let hasResults = false;
+    if (consoleSearchRaf) cancelAnimationFrame(consoleSearchRaf);
+    consoleSearchRaf = requestAnimationFrame(() => {
+      const filter = e.target.value.toLowerCase().trim();
+      const options = optionsList.querySelectorAll(".custom-select-option");
+      const headers = optionsList.querySelectorAll(".custom-select-group-header");
+      let hasResults = false;
 
-    // Remove existing "no results" message
-    const existingNoRes = optionsList.querySelector(".custom-select-no-results");
-    if (existingNoRes) existingNoRes.remove();
+      // Remove existing "no results" message
+      const existingNoRes = optionsList.querySelector(".custom-select-no-results");
+      if (existingNoRes) existingNoRes.remove();
 
-    options.forEach(opt => {
-      const txt = opt.textContent.toLowerCase();
-      const match = txt.includes(filter);
-      opt.style.display = match ? "block" : "none";
-      if (match) hasResults = true;
+      options.forEach(opt => {
+        const txt = opt.textContent.toLowerCase();
+        const match = txt.includes(filter);
+        opt.style.display = match ? "block" : "none";
+        if (match) hasResults = true;
+      });
+
+      headers.forEach(h => {
+        const group = h.getAttribute("data-group");
+        const matchedCount = optionsList.querySelectorAll(".custom-select-option[data-group='" + group + "']:not([style*='display: none'])").length;
+        h.style.display = matchedCount > 0 ? "block" : "none";
+      });
+
+      if (!hasResults && filter !== "") {
+        const noRes = document.createElement("div");
+        noRes.className = "custom-select-no-results";
+        noRes.textContent = "Media tidak ditemukan";
+        optionsList.appendChild(noRes);
+      }
     });
-
-    headers.forEach(h => {
-      const group = h.getAttribute("data-group");
-      const matchedCount = optionsList.querySelectorAll(".custom-select-option[data-group='" + group + "']:not([style*='display: none'])").length;
-      h.style.display = matchedCount > 0 ? "block" : "none";
-    });
-
-    if (!hasResults && filter !== "") {
-      const noRes = document.createElement("div");
-      noRes.className = "custom-select-no-results";
-      noRes.textContent = "Media tidak ditemukan";
-      optionsList.appendChild(noRes);
-    }
   });
 }
 
@@ -3259,6 +3343,141 @@ let portalArticles = [];
 let currentPortalCategory = 'all';
 let currentPortalQuery = '';
 let portalPage = 1;
+let currentPortalMedia = 'all';
+const portalCache = new Map();
+const PORTAL_CACHE_TTL_MS = 60000; // 1 minute client-side cache
+const PORTAL_AUTO_REFRESH_MS = 300000; // 5 minutes
+let portalRequestController = null;
+
+function currentPortalCacheKey() {
+  return currentPortalCategory + ":" + currentPortalQuery + ":" + currentPortalMedia;
+}
+
+function resetPortalMediaSelector() {
+  currentPortalMedia = 'all';
+  const portalSelectedMediaText = document.querySelector("#portal-selected-media-text");
+  if (portalSelectedMediaText) {
+    portalSelectedMediaText.textContent = "Semua Media";
+  }
+  const portalMediaOptions = document.querySelector("#portal-media-options");
+  if (portalMediaOptions) {
+    portalMediaOptions.querySelectorAll(".custom-select-option").forEach(opt => {
+      opt.classList.toggle("selected", opt.getAttribute("data-value") === "all");
+    });
+  }
+}
+
+// Portal Media custom select dropdown interactions
+const portalMediaSelect = document.querySelector("#portal-media-select");
+const portalMediaTrigger = portalMediaSelect ? portalMediaSelect.querySelector(".custom-select-trigger") : null;
+const portalMediaSearch = document.querySelector("#portal-media-search-input");
+const portalMediaOptions = document.querySelector("#portal-media-options");
+
+if (portalMediaTrigger && portalMediaSelect) {
+  portalMediaTrigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    portalMediaSelect.classList.toggle("open");
+    if (portalMediaSelect.classList.contains("open") && portalMediaSearch) {
+      portalMediaSearch.focus();
+    }
+  });
+
+  portalMediaTrigger.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      portalMediaSelect.classList.toggle("open");
+      if (portalMediaSelect.classList.contains("open") && portalMediaSearch) {
+        portalMediaSearch.focus();
+      }
+    }
+  });
+}
+
+document.addEventListener("click", () => {
+  if (portalMediaSelect) portalMediaSelect.classList.remove("open");
+});
+
+if (portalMediaSearch && portalMediaOptions) {
+  portalMediaSearch.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
+
+  let portalSearchRaf = null;
+  portalMediaSearch.addEventListener("input", (e) => {
+    if (portalSearchRaf) cancelAnimationFrame(portalSearchRaf);
+    portalSearchRaf = requestAnimationFrame(() => {
+      const filter = e.target.value.toLowerCase().trim();
+      const options = portalMediaOptions.querySelectorAll(".custom-select-option");
+      const headers = portalMediaOptions.querySelectorAll(".custom-select-group-header");
+      let hasResults = false;
+
+      // Remove existing "no results" message
+      const existingNoRes = portalMediaOptions.querySelector(".custom-select-no-results");
+      if (existingNoRes) existingNoRes.remove();
+
+      options.forEach(opt => {
+        const txt = opt.textContent.toLowerCase();
+        const match = txt.includes(filter);
+        opt.style.display = match ? "block" : "none";
+        if (match) hasResults = true;
+      });
+
+      headers.forEach(h => {
+        const group = h.getAttribute("data-group");
+        const matchedCount = portalMediaOptions.querySelectorAll(".custom-select-option[data-group='" + group + "']:not([style*='display: none'])").length;
+        h.style.display = matchedCount > 0 ? "block" : "none";
+      });
+
+      if (!hasResults && filter !== "") {
+        const noRes = document.createElement("div");
+        noRes.className = "custom-select-no-results";
+        noRes.textContent = "Media tidak ditemukan";
+        portalMediaOptions.appendChild(noRes);
+      }
+    });
+  });
+}
+
+if (portalMediaOptions && portalMediaSelect) {
+  portalMediaOptions.addEventListener("click", (e) => {
+    const item = e.target.closest(".custom-select-option");
+    if (!item) return;
+
+    const val = item.getAttribute("data-value");
+    const label = item.textContent.split(" - ")[0];
+
+    currentPortalMedia = val;
+    const portalSelectedMediaText = document.querySelector("#portal-selected-media-text");
+    if (portalSelectedMediaText) portalSelectedMediaText.textContent = label;
+
+    portalMediaOptions.querySelectorAll(".custom-select-option").forEach(opt => {
+      opt.classList.toggle("selected", opt === item);
+    });
+
+    portalMediaSelect.classList.remove("open");
+
+    // Reset search filter input
+    if (portalMediaSearch) {
+      portalMediaSearch.value = "";
+      const options = portalMediaOptions.querySelectorAll(".custom-select-option");
+      const headers = portalMediaOptions.querySelectorAll(".custom-select-group-header");
+      options.forEach(opt => opt.style.display = "block");
+      headers.forEach(h => h.style.display = "block");
+      const existingNoRes = portalMediaOptions.querySelector(".custom-select-no-results");
+      if (existingNoRes) existingNoRes.remove();
+    }
+
+    // Mutual reset: selecting a specific media resets the category to "all"
+    if (val !== "all") {
+      document.querySelectorAll(".portal-cat-btn").forEach(b => {
+        b.classList.toggle("active", b.getAttribute("data-category") === "all");
+      });
+      currentPortalCategory = "all";
+    }
+
+    void loadPortalNews(currentPortalCategory, currentPortalQuery);
+  });
+}
 
 // Element selectors for portal controls
 const portalLoadMoreBtn = document.querySelector("#portal-load-more-btn");
@@ -3271,6 +3490,8 @@ const toastNotification = document.querySelector("#toast-notification");
 const portalSearchStatus = document.querySelector("#portal-search-status");
 const searchStatusQuery = document.querySelector("#search-status-query");
 const portalSearchClear = document.querySelector("#portal-search-clear");
+const portalRefreshBtn = document.querySelector("#portal-refresh-btn");
+const portalRefreshStatus = document.querySelector("#portal-refresh-status");
 
 // Estimate reading time at 200 words per minute
 function calculateReadingTime(article) {
@@ -3278,6 +3499,28 @@ function calculateReadingTime(article) {
   const wordCount = text.split(/\\s+/).filter(w => w).length;
   const mins = Math.max(1, Math.ceil(wordCount / 200));
   return mins + " mnt baca";
+}
+
+function setPortalRefreshState(state, message) {
+  if (portalRefreshStatus) {
+    portalRefreshStatus.textContent = message;
+  }
+
+  if (!portalRefreshBtn) {
+    return;
+  }
+
+  const isLoading = state === "loading";
+  portalRefreshBtn.disabled = isLoading;
+  portalRefreshBtn.classList.toggle("is-loading", isLoading);
+}
+
+function formatPortalRefreshStatus(articleCount) {
+  const time = new Date().toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return "Diperbarui " + time + " · " + articleCount + " artikel";
 }
 
 // Show animated toast popup
@@ -3323,33 +3566,46 @@ function getArticleCategory(article) {
   return src ? src.category : "general";
 }
 
+let lastHighlightQuery = null;
+let lastHighlightPattern = null;
+let lastHighlightWords = null;
+
 // Escapes HTML and highlights active query terms safely
 function highlightText(text, query) {
   if (!text) return "";
   if (!query || query.trim() === "") return escapeHtml(text);
   
-  const escapedText = escapeHtml(text);
-  const words = query.trim().split(/\\s+/).filter(w => w.length > 0);
-  if (words.length === 0) return escapedText;
-  
-  // Escape each word for both HTML and regex
-  const escapedWords = words.map(w => {
-    const htmlEscaped = escapeHtml(w);
-    const escaped = htmlEscaped.replace(/[-/\\\\^$*+?.()|[\\]{}]/g, '\\\\$&');
-    // If word is short (<= 2 chars) and alphanumeric, enforce word boundaries
-    if (w.length <= 2 && /^[a-zA-Z0-9]+$/.test(w)) {
-      return '\\\\b' + escaped + '\\\\b';
+  const trimmed = query.trim();
+  if (lastHighlightQuery !== trimmed) {
+    lastHighlightQuery = trimmed;
+    const words = trimmed.split(/\\s+/).filter(w => w.length > 0);
+    lastHighlightWords = words;
+    if (words.length === 0) {
+      lastHighlightPattern = null;
+    } else {
+      // Escape each word for both HTML and regex
+      const escapedWords = words.map(w => {
+        const htmlEscaped = escapeHtml(w);
+        const escaped = htmlEscaped.replace(/[-/\\\\^$*+?.()|[\\]{}]/g, '\\\\$&');
+        // If word is short (<= 2 chars) and alphanumeric, enforce word boundaries
+        if (w.length <= 2 && /^[a-zA-Z0-9]+$/.test(w)) {
+          return '\\\\b' + escaped + '\\\\b';
+        }
+        return escaped;
+      });
+      
+      // Match either HTML entities or our escaped words
+      lastHighlightPattern = new RegExp('(&[a-zA-Z0-9#]+;)|(' + escapedWords.join('|') + ')', 'gi');
     }
-    return escaped;
-  });
+  }
+
+  const escapedText = escapeHtml(text);
+  if (!lastHighlightPattern) return escapedText;
   
-  // Match either HTML entities or our escaped words
-  const pattern = new RegExp('(&[a-zA-Z0-9#]+;)|(' + escapedWords.join('|') + ')', 'gi');
-  
-  return escapedText.replace(pattern, (match, entity, term) => {
+  return escapedText.replace(lastHighlightPattern, (match, entity) => {
     if (entity) {
       const matchedLower = match.toLowerCase();
-      const isSearchTerm = words.some(w => escapeHtml(w).toLowerCase() === matchedLower);
+      const isSearchTerm = lastHighlightWords.some(w => escapeHtml(w).toLowerCase() === matchedLower);
       if (isSearchTerm) {
         return '<mark>' + match + '</mark>';
       }
@@ -3401,6 +3657,7 @@ if (shareBtn) {
 // Bookmark filter pill toggle
 if (portalBookmarkFilter) {
   portalBookmarkFilter.addEventListener("click", () => {
+    resetPortalMediaSelector();
     document.querySelectorAll(".portal-cat-btn").forEach(b => b.classList.remove("active"));
     portalBookmarkFilter.classList.add("active");
     const queryVal = portalSearchQ ? portalSearchQ.value : "";
@@ -3408,8 +3665,31 @@ if (portalBookmarkFilter) {
   });
 }
 
+async function fetchPortalJson(url, signal) {
+  let lastError;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await fetch(url, { signal });
+      const data = await response.json();
+      return { response, data };
+    } catch (error) {
+      if (signal.aborted) {
+        throw error;
+      }
+
+      lastError = error;
+      if (attempt === 0) {
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 // Load Portal News from API or Bookmarks
-async function loadPortalNews(cat = 'all', q = '', isAppend = false) {
+async function loadPortalNews(cat = 'all', q = '', isAppend = false, forceRefresh = false) {
   if (!isAppend) {
     portalPage = 1;
   }
@@ -3433,6 +3713,24 @@ async function loadPortalNews(cat = 'all', q = '', isAppend = false) {
     }
   }
 
+  // Check portal cache
+  const cacheKey = cat + ":" + q + ":" + currentPortalMedia;
+  const now = Date.now();
+  if (!isAppend && !forceRefresh && cat !== "bookmark" && portalCache.has(cacheKey)) {
+    const cached = portalCache.get(cacheKey);
+    if (now - cached.timestamp < PORTAL_CACHE_TTL_MS) {
+      portalArticles = cached.articles;
+      if (portalSkeletons) portalSkeletons.style.display = "none";
+      setPortalRefreshState("ready", formatPortalRefreshStatus(portalArticles.length));
+      renderPortalView();
+      return;
+    }
+  }
+
+  if (forceRefresh) {
+    portalCache.delete(cacheKey);
+  }
+
   // Show skeletons
   if (!isAppend) {
     if (portalSkeletons) portalSkeletons.style.display = "grid";
@@ -3442,9 +3740,12 @@ async function loadPortalNews(cat = 'all', q = '', isAppend = false) {
     if (portalFooterWrap) portalFooterWrap.style.display = "none";
   }
 
+  let requestController = null;
+
   try {
     let data;
     if (cat === "bookmark") {
+      setPortalRefreshState("ready", "Menampilkan artikel tersimpan");
       const saved = localStorage.getItem("beritaku-bookmarks");
       const bookmarks = saved ? JSON.parse(saved) : [];
       
@@ -3460,23 +3761,43 @@ async function loadPortalNews(cat = 'all', q = '', isAppend = false) {
       }
       data = { status: "ok", articles: filtered };
     } else {
+      setPortalRefreshState("loading", "Mengambil berita terbaru...");
       let url = "/v2/top-headlines?country=id&pageSize=60";
+      if (forceRefresh) {
+        url += "&refresh=true";
+      }
       
       if (q && q.trim() !== "") {
         url = "/v2/everything?q=" + encodeURIComponent(q.trim()) + "&pageSize=60";
-        if (cat && cat !== "all") {
-          const catSources = availableSources.filter(s => s.category === cat);
-          if (catSources.length > 0) {
-            const sourceIds = catSources.map(s => s.id).join(",");
-            url += "&sources=" + encodeURIComponent(sourceIds);
-          }
+        if (forceRefresh) {
+          url += "&refresh=true";
         }
-      } else if (cat && cat !== "all") {
-        url += "&category=" + cat;
+        if (currentPortalMedia !== "all") {
+          url += "&sources=" + encodeURIComponent(currentPortalMedia);
+        } else if (cat && cat !== "all") {
+          url += "&category=" + encodeURIComponent(cat);
+        }
+      } else {
+        if (currentPortalMedia !== "all") {
+          url += "&category=all&sources=" + encodeURIComponent(currentPortalMedia);
+        } else if (cat && cat !== "all") {
+          url += "&category=" + cat;
+        }
       }
       
-      const response = await fetch(url);
-      data = await response.json();
+      if (portalRequestController) {
+        portalRequestController.abort();
+      }
+
+      requestController = new AbortController();
+      portalRequestController = requestController;
+      const result = await fetchPortalJson(url, requestController.signal);
+      const response = result.response;
+      data = result.data;
+
+      if (portalRequestController === requestController) {
+        portalRequestController = null;
+      }
 
       // If category is active during search, perform category filtering client-side
       if (q && q.trim() !== "" && cat && cat !== "all") {
@@ -3484,6 +3805,14 @@ async function loadPortalNews(cat = 'all', q = '', isAppend = false) {
           const artCat = getArticleCategory(art);
           return artCat === cat;
         });
+      }
+
+      if (response.ok && cat !== "bookmark") {
+        portalCache.set(cacheKey, {
+          timestamp: now,
+          articles: data.articles || []
+        });
+        setPortalRefreshState("ready", formatPortalRefreshStatus((data.articles || []).length));
       }
     }
     
@@ -3522,12 +3851,30 @@ async function loadPortalNews(cat = 'all', q = '', isAppend = false) {
       }
     }
   } catch (err) {
+    const requestWasReplaced =
+      requestController !== null && portalRequestController !== requestController;
+    const requestWasAborted =
+      requestController !== null && requestController.signal.aborted;
+
+    if (
+      requestWasReplaced ||
+      requestWasAborted ||
+      (err instanceof DOMException && err.name === "AbortError")
+    ) {
+      return;
+    }
+
     console.error("Error loading news portal:", err);
+    setPortalRefreshState("error", "Gagal memperbarui feed");
     if (portalSkeletons) portalSkeletons.style.display = "none";
     if (portalEmpty) {
       portalEmpty.style.display = "flex";
       portalEmpty.querySelector("h3").textContent = "Gagal Mengambil Berita";
       portalEmpty.querySelector("p").textContent = "Terjadi kegagalan jaringan saat menghubungi server backend.";
+    }
+  } finally {
+    if (requestController !== null && portalRequestController === requestController) {
+      portalRequestController = null;
     }
   }
 }
@@ -3613,6 +3960,8 @@ function renderPortalGrid(articles) {
   if (!portalNewsGrid) return;
   portalNewsGrid.innerHTML = "";
 
+  const fragment = document.createDocumentFragment();
+
   articles.forEach((article, index) => {
     const card = document.createElement("article");
     card.className = "portal-card";
@@ -3646,8 +3995,10 @@ function renderPortalGrid(articles) {
       '</div>';
 
     card.onclick = () => openReaderModal(article);
-    portalNewsGrid.appendChild(card);
+    fragment.appendChild(card);
   });
+
+  portalNewsGrid.appendChild(fragment);
 }
 
 // Render Shimmer Skeletons
@@ -3655,6 +4006,8 @@ function renderPortalSkeletons() {
   const portalSkeletons = document.querySelector("#portal-skeletons");
   if (!portalSkeletons) return;
   portalSkeletons.innerHTML = "";
+
+  const fragment = document.createDocumentFragment();
 
   for (let i = 0; i < 6; i++) {
     const card = document.createElement("div");
@@ -3671,8 +4024,10 @@ function renderPortalSkeletons() {
       '  <div class="skeleton-title skeleton-shimmer" style="height:20px; width:60%; margin-top:6px;"></div>' +
       '  <div class="skeleton-desc skeleton-shimmer" style="margin-top:14px;"></div>' +
       '</div>';
-    portalSkeletons.appendChild(card);
+    fragment.appendChild(card);
   }
+
+  portalSkeletons.appendChild(fragment);
 }
 
 // Portal search input listeners
@@ -3717,10 +4072,23 @@ if (portalLoadMoreBtn) {
   });
 }
 
+if (portalRefreshBtn) {
+  portalRefreshBtn.addEventListener("click", () => {
+    portalCache.delete(currentPortalCacheKey());
+    void loadPortalNews(
+      currentPortalCategory,
+      currentPortalQuery,
+      false,
+      currentPortalMedia !== "all",
+    );
+  });
+}
+
 // Category Pills click handlers
 document.querySelectorAll(".portal-cat-btn").forEach(btn => {
   if (btn.id === "portal-bookmark-filter") return;
   btn.addEventListener("click", () => {
+    resetPortalMediaSelector();
     document.querySelectorAll(".portal-cat-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     const queryVal = portalSearchQ ? portalSearchQ.value : "";
@@ -3767,4 +4135,27 @@ document.querySelectorAll(".copy-code-btn").forEach(btn => {
 // Load Portal news on startup
 renderPortalSkeletons();
 void loadPortalNews();
+
+window.setInterval(() => {
+  if (document.hidden) {
+    return;
+  }
+
+  if (viewPortal && viewPortal.classList.contains("active")) {
+    const hasFocusedFilter =
+      currentPortalMedia !== "all" ||
+      currentPortalCategory !== "all" ||
+      currentPortalQuery.trim() !== "";
+
+    if (hasFocusedFilter) {
+      portalCache.delete(currentPortalCacheKey());
+      void loadPortalNews(
+        currentPortalCategory,
+        currentPortalQuery,
+        false,
+        currentPortalMedia !== "all",
+      );
+    }
+  }
+}, PORTAL_AUTO_REFRESH_MS);
 `;

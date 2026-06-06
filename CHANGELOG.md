@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **SQLite Article Storage**: High-performance persistence layer using `bun:sqlite` for news articles, with automatic WAL mode and efficient indexing.
+- **Automatic Portal Refresh**: Integrated auto-refresh capability for the news portal with a dedicated "Live" status indicator and manual refresh controls.
+- **Advanced Tech Blog Sources**: Expanded news registry with high-quality engineering and security blogs (Simon Willison, Jeff Geerling, Krebs on Security, etc.) parsed from curated OPML.
+- **Project Multatuli Scraper**: New robust scraper using `cloakbrowser` to bypass protections and ingest complete historical archives from Project Multatuli's WordPress API.
+- **Category Filtering in Everything API**: Added support for filtering by `category` in the `v2/everything` endpoint without requiring explicit source IDs.
+- **Improved CSV Store Performance**: Implemented in-memory indexing and `mtime`-based cache invalidation for the `CsvArticleStore`.
 - **Atom Feed Support**: Enhanced `RssAdapter` to support Atom syndication format.
 - **Improved Media Extraction**: Added robust image extraction from `media:group` tags and HTML content fallback for RSS feeds.
 - **Global News Expansion**: Added international sources like BBC World, NYT, The Guardian, and Hacker News.
@@ -53,6 +59,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Unified Storage Architecture**: Refactored `src/app.ts` to support dynamic switching between SQLite and CSV storage based on environment configuration.
+- **Service Resiliency**: Updated `NewsService` to better handle concurrent live refreshes and avoid server overloading.
 - **Registry Overhaul**: Completely updated `sourceRegistry.ts` with more comprehensive source metadata, language support, and adapter configurations.
 - **News Service**: Enhanced `NewsService` to handle multiple adapter types, article storage, and intelligent source filtering.
 - **Documentation**: Updated `README.md` with new features, source list, and usage instructions for the refresh script.
@@ -61,6 +69,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Performance**: Implemented in-memory indexing and `mtime`-based cache invalidation for the `CsvArticleStore`.
 - Improved error handling and logging for failing news sources.
 - Standardized source IDs and categories across the registry.
 - Fixed image resolution for various Indonesian media outlets.
+- Enhanced pagination logic and error handling across news routes.
+- Removed redundant test scripts.

@@ -1,18 +1,23 @@
 import * as cheerio from "cheerio";
+import { parse } from "csv-parse/sync";
 import { GoogleDecoder } from "google-news-url-decoder";
 import { CsvArticleStore } from "../modules/news/csvArticleStore";
+import { SqliteArticleStore } from "../modules/news/sqliteArticleStore";
 import { NewsService } from "../modules/news/newsService";
 import { defaultNewsSources } from "../modules/news/sourceRegistry";
 import type { NewsArticle, NewsSource } from "../modules/news/types";
 
 const csvPath = Bun.env.NEWS_CSV_PATH ?? "data/news-cache.csv";
-const articleStore = new CsvArticleStore(csvPath);
+const sqlitePath = Bun.env.NEWS_SQLITE_PATH ?? "data/news-cache.sqlite";
+
+const csvStore = new CsvArticleStore(csvPath);
+const sqliteStore = new SqliteArticleStore(sqlitePath);
 
 const newsService = new NewsService({
   sources: defaultNewsSources,
   fetchText,
   cacheTtlMs: 0,
-  articleStore,
+  articleStore: csvStore,
   onSourceError: logSourceError,
 });
 
@@ -29,17 +34,105 @@ function acquireMutex(): Promise<() => void> {
   return wait;
 }
 
-// 1. Build lookup map of already decoded/scraped articles from existing CSV
+// 1. Build lookup map of already decoded/scraped articles (prefer SQLite if exists, otherwise CSV)
+const allExistingArticles: NewsArticle[] = [];
 const cachedArticlesMap = new Map<string, NewsArticle>();
-for (const src of defaultNewsSources) {
+const cachedArticlesByUrl = new Map<string, NewsArticle>();
+
+const sqliteFile = Bun.file(sqlitePath);
+if (await sqliteFile.exists()) {
   try {
-    const articles = await articleStore.readArticles(src);
-    for (const article of articles) {
-      const key = `${src.id}:${article.title}`;
-      cachedArticlesMap.set(key, article);
+    const { Database } = await import("bun:sqlite");
+    const db = new Database(sqlitePath);
+    interface SqliteRow {
+      readonly source_id: string;
+      readonly source_name: string;
+      readonly author: string | null;
+      readonly title: string;
+      readonly description: string | null;
+      readonly url: string;
+      readonly url_to_image: string | null;
+      readonly published_at: string | null;
+      readonly content: string | null;
     }
-  } catch {
-    // Ignore if file doesn't exist yet
+    const rows = db.query("SELECT * FROM articles").all() as SqliteRow[];
+    for (const row of rows) {
+      const article: NewsArticle = {
+        source: {
+          id: row.source_id,
+          name: row.source_name,
+        },
+        author: row.author,
+        title: row.title,
+        description: row.description,
+        url: row.url,
+        urlToImage: row.url_to_image,
+        publishedAt: row.published_at,
+        content: row.content,
+      };
+      allExistingArticles.push(article);
+
+      const titleKey = `${article.source.id}:${article.title.toLowerCase().trim()}`;
+      cachedArticlesMap.set(titleKey, article);
+      if (article.url && !article.url.includes("news.google.com")) {
+        cachedArticlesByUrl.set(article.url.trim(), article);
+      }
+    }
+    db.close();
+  } catch (error) {
+    void Bun.write(
+      Bun.stderr,
+      `Warning: could not read existing SQLite for cache lookup: ${formatUnknownError(error)}\n`,
+    );
+  }
+} else {
+  try {
+    const file = Bun.file(csvPath);
+    if (await file.exists()) {
+      interface CsvRecord {
+        sourceId: string;
+        sourceName: string;
+        author?: string;
+        title: string;
+        description?: string;
+        url: string;
+        urlToImage?: string;
+        publishedAt?: string;
+        content?: string;
+      }
+      const records = parse(await file.text(), {
+        columns: true,
+        skip_empty_lines: true,
+      }) as CsvRecord[];
+
+      for (const record of records) {
+        const article: NewsArticle = {
+          source: {
+            id: record.sourceId,
+            name: record.sourceName,
+          },
+          author: record.author || null,
+          title: record.title,
+          description: record.description || null,
+          url: record.url,
+          urlToImage: record.urlToImage || null,
+          publishedAt: record.publishedAt || null,
+          content: record.content || null,
+        };
+        allExistingArticles.push(article);
+
+        const titleKey = `${article.source.id}:${article.title.toLowerCase().trim()}`;
+        cachedArticlesMap.set(titleKey, article);
+        if (article.url && !article.url.includes("news.google.com")) {
+          cachedArticlesByUrl.set(article.url.trim(), article);
+        }
+      }
+    }
+  } catch (error) {
+    void Bun.write(
+      Bun.stderr,
+      `Warning: could not read existing CSV for cache lookup: ${formatUnknownError(error)}\n`,
+    );
   }
 }
 
@@ -47,8 +140,9 @@ for (const src of defaultNewsSources) {
 const result = await newsService.getTopHeadlines({
   country: "id",
   category: "all",
+  refresh: true,
   page: 1,
-  pageSize: 10_000,
+  pageSize: 1_000_000,
   offset: 0,
 });
 
@@ -57,8 +151,11 @@ const articlesToProcessBySource = new Map<string, NewsArticle[]>();
 const updatedArticles: NewsArticle[] = [];
 
 for (const article of result.articles) {
-  const key = `${article.source.id}:${article.title}`;
-  const cached = cachedArticlesMap.get(key);
+  const titleKey = `${article.source.id}:${article.title.toLowerCase().trim()}`;
+  let cached = cachedArticlesMap.get(titleKey);
+  if (!cached && article.url && !article.url.includes("news.google.com")) {
+    cached = cachedArticlesByUrl.get(article.url.trim());
+  }
 
   if (cached !== undefined && !cached.url.includes("news.google.com")) {
     // Reuse cached decoded URL and image (fallback to Bing thumbnail if cache is missing it)
@@ -177,22 +274,93 @@ if (toScrape.length > 0) {
   await Promise.all(workers);
 }
 
-// Assemble final articles list and write to CSV
-const finalArticles = [
-  ...updatedArticles,
-  ...scrapeResults,
-  ...remaining.map((art) => ({
+// Assemble, merge, and deduplicate all fresh & historical articles
+const finalMap = new Map<string, NewsArticle>();
+
+function addOrUpdate(article: NewsArticle) {
+  const titleKey = `${article.source.id}:${article.title.toLowerCase().trim()}`;
+  const urlKey = article.url ? article.url.trim() : "";
+
+  const existing = finalMap.get(titleKey);
+  if (existing) {
+    const newIsDecoded = !article.url.includes("news.google.com");
+    const oldIsDecoded = !existing.url.includes("news.google.com");
+
+    if (newIsDecoded || !oldIsDecoded) {
+      finalMap.set(titleKey, {
+        ...existing,
+        ...article,
+        url: newIsDecoded ? article.url : existing.url,
+        urlToImage:
+          (newIsDecoded ? article.urlToImage : existing.urlToImage) ||
+          article.urlToImage ||
+          existing.urlToImage,
+      });
+    }
+    return;
+  }
+
+  // Check if we already have this article by URL (if it is a decoded/final URL)
+  if (urlKey && !urlKey.includes("news.google.com")) {
+    for (const existingArt of finalMap.values()) {
+      if (existingArt.url.trim() === urlKey) {
+        return;
+      }
+    }
+  }
+
+  finalMap.set(titleKey, article);
+}
+
+// 1. Add all existing historical articles first
+for (const art of allExistingArticles) {
+  addOrUpdate(art);
+}
+
+// 2. Add/Overwrite with already resolved fresh articles
+for (const art of updatedArticles) {
+  addOrUpdate(art);
+}
+
+// 3. Add newly scraped articles
+for (const art of scrapeResults) {
+  addOrUpdate(art);
+}
+
+// 4. Add deferred articles (which have fallback image/url)
+for (const art of remaining) {
+  const fallbackArt: NewsArticle = {
     ...art,
     urlToImage:
       art.urlToImage ||
       `https://tse1.mm.bing.net/th?q=${encodeURIComponent(art.title)}`,
-  })),
-];
-await articleStore.writeArticles(finalArticles);
+  };
+  addOrUpdate(fallbackArt);
+}
+
+// Sort all articles by publishedAt descending, so the newest articles are always first
+const sortedArticles = Array.from(finalMap.values()).sort((left, right) => {
+  const leftTime = left.publishedAt ? new Date(left.publishedAt).getTime() : 0;
+  const rightTime = right.publishedAt
+    ? new Date(right.publishedAt).getTime()
+    : 0;
+  return rightTime - leftTime;
+});
+
+// Cap total size of fallback DB (defaults to 1,000,000 articles)
+const MAX_ARTICLES = Number(Bun.env.MAX_ARTICLES_CAP ?? "1000000");
+const cappedArticles = sortedArticles.slice(0, MAX_ARTICLES);
+
+await csvStore.writeArticles(cappedArticles);
+await sqliteStore.writeArticles(cappedArticles);
 
 void Bun.write(
   Bun.stdout,
-  `Saved ${finalArticles.length} articles to ${csvPath} (${updatedArticles.length} from cache, ${scrapeResults.length} scraped, ${remaining.length} deferred)\n`,
+  `Successfully updated CSV and SQLite databases:
+- Total articles stored: ${cappedArticles.length} (capped at ${MAX_ARTICLES})
+- Freshly retrieved from feeds: ${result.articles.length} (${updatedArticles.length} cache hits, ${scrapeResults.length} newly scraped, ${remaining.length} deferred)
+- Preserved historical articles: ${cappedArticles.length - result.articles.length}
+- Deduplicated all entries by title and URL.\n`,
 );
 
 async function fetchText(url: string): Promise<string> {

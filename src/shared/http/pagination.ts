@@ -8,7 +8,12 @@ export interface Pagination {
 
 export function parsePagination(query: Record<string, string>): Pagination {
   const page = parsePositiveInteger(query.page, "page", 1);
-  const pageSize = parsePositiveInteger(query.pageSize, "pageSize", 20, 100);
+  const pageSize = parsePositiveInteger(
+    query.pageSize,
+    "pageSize",
+    20,
+    1000000,
+  );
 
   return {
     page,

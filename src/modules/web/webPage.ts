@@ -77,6 +77,13 @@ export function renderHomePage(): string {
             </div>
             <h1 class="portal-title">Beritaku</h1>
             <p class="portal-lead">Portal agregator berita nasional dengan performa tinggi & dokumentasi API terintegrasi.</p>
+            <div class="portal-refresh-strip">
+              <span id="portal-refresh-status" class="portal-refresh-status" aria-live="polite">Menyiapkan feed terbaru...</span>
+              <button id="portal-refresh-btn" class="portal-refresh-btn" type="button">
+                <svg class="refresh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2"></path><path d="M3 12a9 9 0 0 1 15.5-6.2"></path><path d="M18 3v5h-5"></path><path d="M6 21v-5h5"></path></svg>
+                <span>Perbarui</span>
+              </button>
+            </div>
           </header>
 
           <!-- Breaking News Marquee Ticker -->
@@ -102,6 +109,25 @@ export function renderHomePage(): string {
                 <span>⭐ Tersimpan</span>
               </button>
             </div>
+
+            <div class="portal-media-filter-wrapper">
+              <div class="custom-select" id="portal-media-select">
+                <div class="custom-select-trigger" tabindex="0">
+                  <span id="portal-selected-media-text">Semua Media</span>
+                  <svg class="select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="custom-select-dropdown">
+                  <div class="custom-select-search-container">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="dropdown-search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="portal-media-search-input" placeholder="Cari media..." autocomplete="off" />
+                  </div>
+                  <ul class="custom-select-options" id="portal-media-options">
+                    <!-- Dynamic options populate here -->
+                  </ul>
+                </div>
+              </div>
+            </div>
+
             <div class="portal-search">
               <input type="text" id="portal-search-q" placeholder="Cari berita di portal..." />
               <button id="portal-search-go" class="portal-search-btn" type="button">Cari</button>

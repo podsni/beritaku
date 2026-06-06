@@ -26,6 +26,8 @@ export class NewsService {
   private readonly htmlAdapter = new HtmlAdapter();
   private readonly rssAdapter = new RssAdapter();
   private readonly cache: TimedCache<readonly NewsArticle[]>;
+  private readonly pendingBackgroundFetches = new Set<string>();
+  private readonly lastRevalidationAttempt = new Map<string, number>();
 
   constructor(private readonly options: NewsServiceOptions) {
     this.cache = new TimedCache(options.cacheTtlMs);
@@ -38,7 +40,7 @@ export class NewsService {
   async getTopHeadlines(query: TopHeadlinesQuery): Promise<NewsSearchResult> {
     const sources = this.resolveTopHeadlineSources(query);
 
-    const articles = await this.fetchArticles(sources);
+    const articles = await this.fetchArticles(sources, query.refresh);
     const sortedArticles = sortByPublishedAt(articles);
     return {
       totalResults: sortedArticles.length,
@@ -50,8 +52,9 @@ export class NewsService {
     const sources = this.resolveEverythingSources(
       query.sources,
       query.language,
+      query.category,
     );
-    const articles = await this.fetchArticles(sources);
+    const articles = await this.fetchArticles(sources, query.refresh);
     const filtered = articles.filter((article) =>
       matchesEverythingQuery(article, query),
     );
@@ -66,10 +69,15 @@ export class NewsService {
   private resolveEverythingSources(
     sourceIds: readonly string[] | undefined,
     language?: NewsLanguage,
+    category?: TopHeadlinesQuery["category"],
   ): readonly NewsSource[] {
     let sources = this.options.sources;
     if (language !== undefined) {
       sources = sources.filter((source) => source.language === language);
+    }
+
+    if (category !== undefined && category !== "all") {
+      sources = sources.filter((source) => source.category === category);
     }
 
     if (sourceIds === undefined || sourceIds.length === 0) {
@@ -130,16 +138,19 @@ export class NewsService {
 
   private async fetchArticles(
     sources: readonly NewsSource[],
+    refresh: boolean,
   ): Promise<readonly NewsArticle[]> {
-    const settledArticles = await Promise.all(
-      sources.map(async (source) => {
+    const settledArticles = await mapWithConcurrency(
+      sources,
+      6,
+      async (source) => {
         try {
-          return await this.fetchSourceArticles(source);
+          return await this.fetchSourceArticles(source, refresh);
         } catch (error) {
           this.options.onSourceError?.(source, error);
           return [];
         }
-      }),
+      },
     );
 
     return dedupeByUrl(settledArticles.flat());
@@ -147,14 +158,74 @@ export class NewsService {
 
   private async fetchSourceArticles(
     source: NewsSource,
+    refresh: boolean,
   ): Promise<readonly NewsArticle[]> {
-    const cached = this.cache.get(source.id);
-    if (cached !== undefined) {
-      return cached;
+    if (refresh) {
+      const articles = await this.fetchFreshSourceArticles(source);
+      this.cache.set(source.id, articles);
+      return articles;
     }
 
-    const articles = await this.fetchFreshSourceArticles(source);
+    const cachedInfo = this.cache.getWithStale(source.id);
 
+    if (cachedInfo !== undefined) {
+      if (cachedInfo.isStale) {
+        const now = Date.now();
+        const lastAttempt = this.lastRevalidationAttempt.get(source.id) ?? 0;
+        const cooldownMs = 60_000; // 60 seconds cooldown between background refreshes
+
+        if (now - lastAttempt > cooldownMs) {
+          // Trigger background refresh if not already pending
+          if (!this.pendingBackgroundFetches.has(source.id)) {
+            this.pendingBackgroundFetches.add(source.id);
+            this.lastRevalidationAttempt.set(source.id, now);
+            this.fetchFreshSourceArticles(source)
+              .then((freshArticles) => {
+                this.cache.set(source.id, freshArticles);
+              })
+              .catch((error) => {
+                this.options.onSourceError?.(source, error);
+              })
+              .finally(() => {
+                this.pendingBackgroundFetches.delete(source.id);
+              });
+          }
+        }
+      }
+      return cachedInfo.value;
+    }
+
+    // Cold cache: check database fallback first
+    if (this.options.cacheTtlMs > 0) {
+      const stored = await this.readStoredArticles(source);
+      if (stored.length > 0) {
+        this.cache.set(source.id, stored);
+        const now = Date.now();
+        const lastAttempt = this.lastRevalidationAttempt.get(source.id) ?? 0;
+        const cooldownMs = 60_000;
+
+        if (now - lastAttempt > cooldownMs) {
+          if (!this.pendingBackgroundFetches.has(source.id)) {
+            this.pendingBackgroundFetches.add(source.id);
+            this.lastRevalidationAttempt.set(source.id, now);
+            this.fetchFreshSourceArticles(source)
+              .then((freshArticles) => {
+                this.cache.set(source.id, freshArticles);
+              })
+              .catch((error) => {
+                this.options.onSourceError?.(source, error);
+              })
+              .finally(() => {
+                this.pendingBackgroundFetches.delete(source.id);
+              });
+          }
+        }
+        return stored;
+      }
+    }
+
+    // Truly cold: fetch synchronously
+    const articles = await this.fetchFreshSourceArticles(source);
     this.cache.set(source.id, articles);
     return articles;
   }
@@ -307,6 +378,27 @@ function paginate<T>(
   pageSize: number,
 ): readonly T[] {
   return values.slice(offset, offset + pageSize);
+}
+
+async function mapWithConcurrency<T, U>(
+  values: readonly T[],
+  limit: number,
+  mapper: (value: T) => Promise<U>,
+): Promise<U[]> {
+  const results: U[] = [];
+  let nextIndex = 0;
+
+  const worker = async () => {
+    while (nextIndex < values.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      results[currentIndex] = await mapper(values[currentIndex] as T);
+    }
+  };
+
+  const workerCount = Math.min(limit, values.length);
+  await Promise.all(Array.from({ length: workerCount }, worker));
+  return results;
 }
 
 function dedupeByUrl(articles: readonly NewsArticle[]): NewsArticle[] {

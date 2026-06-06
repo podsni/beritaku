@@ -1,10 +1,13 @@
+import { XMLParser } from "fast-xml-parser";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { NewsSource, PublicNewsSource } from "./types";
 
 type NewsSourceInput = Omit<NewsSource, "country" | "language"> & {
   readonly language?: NewsSource["language"];
 };
 
-export const defaultNewsSources: readonly NewsSource[] = [
+const staticNewsSources: readonly NewsSource[] = [
   createSource({
     id: "kompas-home",
     name: "Kompas.com",
@@ -734,6 +737,70 @@ export const defaultNewsSources: readonly NewsSource[] = [
     category: "general",
     language: "id",
   }),
+];
+
+interface OpmlOutline {
+  readonly title?: string;
+  readonly text?: string;
+  readonly xmlUrl?: string;
+  readonly htmlUrl?: string;
+}
+
+function loadOpmlSources(): NewsSource[] {
+  try {
+    const opmlPath = join(process.cwd(), "data/hn-popular-blogs-2025.opml");
+    const xmlData = readFileSync(opmlPath, "utf8");
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: "",
+    });
+    const jsonObj = parser.parse(xmlData);
+
+    const outlines = jsonObj?.opml?.body?.outline?.outline;
+    if (!outlines) {
+      return [];
+    }
+
+    const outlineArray = (
+      Array.isArray(outlines) ? outlines : [outlines]
+    ) as readonly OpmlOutline[];
+
+    return outlineArray
+      .filter(
+        (outline): outline is OpmlOutline & { readonly xmlUrl: string } =>
+          typeof outline?.xmlUrl === "string",
+      )
+      .map((outline) => {
+        const name = outline.title || outline.text || "Tech Blog";
+        const cleanId =
+          "blog-" +
+          name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "");
+
+        return createSource({
+          id: cleanId,
+          name: name,
+          description: `Popular developer blog feed for ${name}`,
+          url: outline.htmlUrl || "https://" + name,
+          rssUrl: outline.xmlUrl,
+          category: "technology",
+          language: "en",
+        });
+      });
+  } catch (error) {
+    void Bun.write(
+      Bun.stderr,
+      `Warning: failed to load OPML sources: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
+    return [];
+  }
+}
+
+export const defaultNewsSources: readonly NewsSource[] = [
+  ...staticNewsSources,
+  ...loadOpmlSources(),
 ];
 
 function createSource(source: NewsSourceInput): NewsSource {

@@ -144,6 +144,8 @@ describe("News API Indonesia", () => {
     expect(html).toContain("endpoint-stats");
     expect(html).toContain('aria-live="polite"');
     expect(html).toContain("Breaking nasional");
+    expect(html).toContain("portal-refresh-btn");
+    expect(html).toContain("portal-refresh-status");
 
     expect(css).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
     expect(css).toContain("@media (max-width: 520px)");
@@ -154,6 +156,9 @@ describe("News API Indonesia", () => {
     expect(js).toContain("AbortController");
     expect(js).toContain('img.decoding = "async"');
     expect(js).toContain("updateEndpointStats");
+    expect(js).toContain("refresh=true");
+    expect(js).toContain("PORTAL_AUTO_REFRESH_MS");
+    expect(js).toContain("fetchPortalJson");
   });
 
   test("returns NewsAPI-like top headlines for Indonesia RSS sources", async () => {
@@ -277,6 +282,62 @@ describe("News API Indonesia", () => {
     });
   });
 
+  test("filters everything results by category without requiring a long sources list", async () => {
+    const app = createApp({
+      cacheTtlMs: 0,
+      articleStore: {
+        readArticles: async () => [],
+        writeArticles: async () => {},
+      },
+      sources: [
+        {
+          id: "general-source",
+          name: "General Source",
+          category: "general",
+          country: "id",
+          language: "id",
+          url: "https://example.com/general",
+          rssUrl: "https://example.com/general.xml",
+        },
+        {
+          id: "technology-source",
+          name: "Technology Source",
+          category: "technology",
+          country: "id",
+          language: "id",
+          url: "https://example.com/technology",
+          rssUrl: "https://example.com/technology.xml",
+        },
+      ],
+      fetchText: async (url) => `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>${url}</title>
+    <item>
+      <title>AI dipakai untuk layanan publik ${url.includes("technology") ? "tekno" : "umum"}</title>
+      <link>${url.replace(".xml", "/artikel")}</link>
+      <description>Berita AI dari ${url}.</description>
+      <pubDate>Fri, 05 Jun 2026 12:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>`,
+    });
+
+    const response = await app.request(
+      "/v2/everything?q=AI&category=technology",
+    );
+    const payload = (await response.json()) as {
+      readonly totalResults: number;
+      readonly articles: readonly {
+        readonly source: { readonly id: string };
+      }[];
+    };
+
+    expect(response.status).toBe(200);
+    expect(payload.totalResults).toBe(1);
+    expect(payload.articles[0]?.source.id).toBe("technology-source");
+  });
+
   test("returns configured Indonesia news sources", async () => {
     const app = createTestApp();
     const response = await app.request("/v2/top-headlines/sources");
@@ -381,6 +442,192 @@ describe("News API Indonesia", () => {
     }
   });
 
+  test("keeps a parsed CSV source index for repeated store reads", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "beritaku-news-"));
+    const csvPath = join(directory, "news-cache.csv");
+    const articleStore = new CsvArticleStore(csvPath);
+
+    try {
+      await articleStore.writeArticles([
+        {
+          source: { id: "source-a", name: "Source A" },
+          author: null,
+          title: "Artikel Source A",
+          description: "Cache source A.",
+          url: "https://example.com/a",
+          urlToImage: null,
+          publishedAt: "2026-06-05T07:00:00.000Z",
+          content: "Cache source A.",
+        },
+        {
+          source: { id: "source-b", name: "Source B" },
+          author: null,
+          title: "Artikel Source B",
+          description: "Cache source B.",
+          url: "https://example.com/b",
+          urlToImage: null,
+          publishedAt: "2026-06-05T08:00:00.000Z",
+          content: "Cache source B.",
+        },
+      ]);
+
+      const firstRead = await articleStore.readArticles({
+        id: "source-a",
+        name: "Source A",
+        category: "general",
+        country: "id",
+        language: "id",
+        url: "https://example.com/a",
+        rssUrl: "https://example.com/a.xml",
+      });
+
+      await rm(csvPath, { force: true });
+
+      const secondRead = await articleStore.readArticles({
+        id: "source-b",
+        name: "Source B",
+        category: "general",
+        country: "id",
+        language: "id",
+        url: "https://example.com/b",
+        rssUrl: "https://example.com/b.xml",
+      });
+
+      expect(firstRead.map((article) => article.title)).toEqual([
+        "Artikel Source A",
+      ]);
+      expect(secondRead.map((article) => article.title)).toEqual([
+        "Artikel Source B",
+      ]);
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  test("refreshes top headlines from the live source instead of serving stored cold-cache articles", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "beritaku-news-"));
+    const csvPath = join(directory, "news-cache.csv");
+    const articleStore = new CsvArticleStore(csvPath);
+
+    try {
+      await articleStore.writeArticles([
+        {
+          source: { id: "live-source", name: "Live Source" },
+          author: null,
+          title: "Berita lama dari cache lokal",
+          description: "Artikel lama yang tersimpan sebelum refresh.",
+          url: "https://example.com/old",
+          urlToImage: null,
+          publishedAt: "2026-06-04T07:00:00.000Z",
+          content: "Artikel lama yang tersimpan sebelum refresh.",
+        },
+      ]);
+
+      const app = createApp({
+        cacheTtlMs: 300_000,
+        articleStore,
+        sources: [
+          {
+            id: "live-source",
+            name: "Live Source",
+            category: "general",
+            country: "id",
+            language: "id",
+            url: "https://example.com/live",
+            rssUrl: "https://example.com/live.xml",
+          },
+        ],
+        fetchText: async () => `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Live Source</title>
+    <item>
+      <title>Berita terbaru dari sumber langsung</title>
+      <link>https://example.com/new</link>
+      <description>Artikel terbaru yang harus muncul di portal.</description>
+      <pubDate>Fri, 05 Jun 2026 12:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>`,
+      });
+
+      const response = await app.request(
+        "/v2/top-headlines?country=id&sources=live-source&refresh=true",
+      );
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({
+        status: "ok",
+        totalResults: 1,
+        articles: [
+          {
+            source: { id: "live-source", name: "Live Source" },
+            author: null,
+            title: "Berita terbaru dari sumber langsung",
+            description: "Artikel terbaru yang harus muncul di portal.",
+            url: "https://example.com/new",
+            urlToImage: null,
+            publishedAt: "2026-06-05T12:00:00.000Z",
+            content: "Artikel terbaru yang harus muncul di portal.",
+          },
+        ],
+      });
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  test("limits concurrent live refreshes so the portal does not overload the server", async () => {
+    let activeFetches = 0;
+    let maxActiveFetches = 0;
+    const sources = Array.from({ length: 12 }, (_, index) => ({
+      id: `source-${index}`,
+      name: `Source ${index}`,
+      category: "general" as const,
+      country: "id" as const,
+      language: "id" as const,
+      url: `https://example.com/source-${index}`,
+      rssUrl: `https://example.com/source-${index}.xml`,
+    }));
+
+    const app = createApp({
+      cacheTtlMs: 0,
+      articleStore: {
+        readArticles: async () => [],
+        writeArticles: async () => {},
+      },
+      sources,
+      fetchText: async (url) => {
+        activeFetches += 1;
+        maxActiveFetches = Math.max(maxActiveFetches, activeFetches);
+
+        await Bun.sleep(10);
+        activeFetches -= 1;
+
+        const sourceId = url.match(/source-\d+/)?.[0] ?? "source-unknown";
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>${sourceId}</title>
+    <item>
+      <title>Artikel terbaru ${sourceId}</title>
+      <link>https://example.com/${sourceId}/artikel</link>
+      <description>Berita terbaru dari ${sourceId}.</description>
+      <pubDate>Fri, 05 Jun 2026 12:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>`;
+      },
+    });
+
+    const response = await app.request(
+      "/v2/top-headlines?country=id&category=all&pageSize=20&refresh=true",
+    );
+
+    expect(response.status).toBe(200);
+    expect(maxActiveFetches).toBeLessThanOrEqual(6);
+  });
+
   test("returns NewsAPI-like errors for invalid query parameters", async () => {
     const app = createTestApp();
     const response = await app.request("/v2/top-headlines?country=us");
@@ -431,4 +678,70 @@ describe("News API Indonesia", () => {
       expect(sourceIds.has(requiredSource)).toBe(true);
     }
   });
+
+  test("default registry includes technology blogs parsed from OPML", () => {
+    const sourceIds = new Set(defaultNewsSources.map((source) => source.id));
+
+    for (const requiredBlog of [
+      "blog-simonwillison-net",
+      "blog-jeffgeerling-com",
+      "blog-krebsonsecurity-com",
+      "blog-antirez-com",
+    ]) {
+      expect(sourceIds.has(requiredBlog)).toBe(true);
+      const source = defaultNewsSources.find((s) => s.id === requiredBlog);
+      expect(source).toBeDefined();
+      expect(source?.category).toBe("technology");
+      expect(source?.language).toBe("en");
+    }
+  });
+
+  test("SqliteArticleStore writes and reads articles correctly", async () => {
+    const { SqliteArticleStore } =
+      await import("./modules/news/sqliteArticleStore");
+    const testDbPath = "data/test-news-cache.sqlite";
+    const cleanupTestDb = async () => {
+      for (const path of [
+        testDbPath,
+        `${testDbPath}-shm`,
+        `${testDbPath}-wal`,
+      ]) {
+        await rm(path, { force: true });
+      }
+    };
+
+    await cleanupTestDb();
+
+    const store = new SqliteArticleStore(testDbPath);
+    const mockArticle = {
+      source: {
+        id: "test-source",
+        name: "Test Source",
+      },
+      author: "Test Author",
+      title: "Test Title",
+      description: "Test Description",
+      url: "https://example.com/test",
+      urlToImage: "https://example.com/test.jpg",
+      publishedAt: "2026-06-05T00:00:00Z",
+      content: "Test Content",
+    };
+
+    await store.writeArticles([mockArticle]);
+
+    const read = await store.readArticles({
+      id: "test-source",
+      name: "Test Source",
+      description: "Test Source Description",
+      url: "https://example.com/test-source",
+      rssUrl: "https://example.com/test-source/rss",
+      category: "general",
+      language: "id",
+      country: "id",
+    });
+    expect(read.length).toBe(1);
+    expect(read[0]).toEqual(mockArticle);
+
+    await cleanupTestDb();
+  }, 20000);
 });
